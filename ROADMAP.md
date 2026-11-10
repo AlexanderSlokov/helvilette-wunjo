@@ -40,6 +40,20 @@ See [RFC 0001: Proposal](docs/explanation/rfc-0001-why-helvilette-wunjo.md#propo
 
 ## Later
 
+### Day-2 view
+
+Wunjo will offer `wunjo ui`, a terminal view of each host for day-2 operations, as k9s
+does for a Kubernetes cluster. See
+[RFC 0001: Day-2 view](docs/explanation/rfc-0001-why-helvilette-wunjo.md#day-2-view).
+
+- Build it after Phase 2, when the digest history and `wunjo plan` exist.
+- First version, read-only: show images, containers, `kamal-proxy` state, disk usage,
+  and locks per host, and tail the logs of one service across its hosts.
+- Read data over SSH with read-only Docker commands, with nothing installed on the
+  servers.
+- Later version: add rollback, lock, and prune, each mapped to a CLI command that the
+  view prints before it runs.
+
 ### Secret backends
 
 Wunjo will read secrets from a backend such as Vault, after the first version reads

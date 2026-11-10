@@ -7,7 +7,7 @@ The following table records the state of this request for comments (RFC):
 | Status | Draft, open for comments |
 | Author | Aleksandr Slokov |
 | Created | 2026-11-08 |
-| Updated | 2026-11-11, after the third interview round |
+| Updated | 2026-11-11, after the fourth interview round |
 | Reviewers | Colleagues of the author and AI agents |
 
 ## Overview
@@ -350,6 +350,37 @@ next to the old one. On such a host, a release has to stop the old container fir
 Wunjo states this in `wunjo plan` output and does not claim a zero-downtime swap it
 cannot perform. Kamal has the same physical limit.
 
+### Day-2 view
+
+Deploying is day 1. _Day-2 operations_ cover everything after: checking what runs,
+reading logs, and finding why a host misbehaves. A Kubernetes operator deploys with a
+tool such as Argo CD and watches the cluster with k9s. Wunjo follows the same split:
+the CLI deploys, and `wunjo ui` opens a terminal user interface (TUI) to watch the
+hosts.
+
+The view shows the following for each host:
+
+- **Images**: tag, digest, size, age, and the release that uses each image.
+- **Containers**: service, role, release, state, health, and uptime, for applications
+  and accessories.
+- **`kamal-proxy`**: whether it runs, its version, and the services and targets it
+  routes to.
+- **Disk and locks**: Docker disk usage, and the deploy lock with its holder and
+  message.
+- **Logs**: a live tail of one service across all of its hosts.
+
+The view reads its data over the same SSH connections as the CLI, with read-only
+Docker commands such as `docker ps` and `kamal-proxy list`. The servers run nothing
+extra, which keeps the production moving parts the same as with Kamal. Portainer, by
+comparison, runs its own component on each server.
+
+The first version of the view is read-only: it shows state and tails logs, and it
+changes nothing on the hosts. Actions such as rollback, lock, and prune come in a later
+version, once the read-only view has proven useful. The view has no powers of its own.
+Each action maps to a CLI command, and the view prints that command, such as
+`wunjo rollback comfyui sha256:41c7…`, before it runs. The view lives in its own package on top of Wunjo's internal API, so removing it
+leaves the CLI unchanged.
+
 ### Success criterion
 
 Wunjo succeeds when the author prefers it to Kamal and deploys real services with it.
@@ -388,8 +419,8 @@ Wunjo does not do the following:
 - Require Ruby or any runtime besides a single Go binary.
 - Provision or configure servers.
 - Replace Kubernetes for workloads that need Kubernetes.
-- Offer a log viewer or dashboard. `wunjo logs` fetches logs, and tools the operator
-  already runs, such as Portainer, stay available for browsing them.
+- Run a web dashboard or any component on the servers. The day-2 view runs in the
+  operator's terminal.
 
 ## Alternatives considered
 
@@ -412,8 +443,8 @@ plus a short script cannot.
 
 ## Open questions
 
-The interview rounds settled the builder, ERB, rollback, the proxy, secrets, and the
-port strategy. The author asks reviewers to weigh in on the following points:
+The interview rounds settled the builder, ERB, rollback, the proxy, secrets, the port
+strategy, and the scope of the day-2 view. The author asks reviewers to weigh in on the following points:
 
 1. **Services without a hostname.** Publishing ports directly forces a stop-then-start
     release. Is that acceptable for IP-only services on a LAN, or does a better route
