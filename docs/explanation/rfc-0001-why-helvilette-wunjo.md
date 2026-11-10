@@ -7,7 +7,7 @@ The following table records the state of this request for comments (RFC):
 | Status | Draft, open for comments |
 | Author | Aleksandr Slokov |
 | Created | 2026-11-08 |
-| Updated | 2026-11-09, after the second interview round |
+| Updated | 2026-11-11, after the third interview round |
 | Reviewers | Colleagues of the author and AI agents |
 
 ## Overview
@@ -226,20 +226,101 @@ Wunjo changes the rules that come from 37signals:
   directly, so two IP-only services on one host no longer collide. Because the old and
   new containers cannot bind the same port at once, such a service stops before it
   restarts.
-- **The registry is the operator's choice.** Wunjo pushes and pulls through the Docker
-  daemons on the laptop and the servers, so their own `insecure-registries` settings
-  apply. Wunjo adds no TLS rule of its own.
+- **The registry is the operator's choice.** A registry can use plain HTTP or a
+  certificate signed by an internal certificate authority (CA). The builder trusts it
+  through the mechanism in [The builder trusts an internal registry](#the-builder-trusts-an-internal-registry).
+  On the servers, Wunjo pulls through the Docker daemon, so the daemon's own
+  `insecure-registries` and `/etc/docker/certs.d/` settings apply. `wunjo plan` warns
+  when a server lacks the CA file for the registry.
 - **Any tag is valid.** Wunjo records the digest of each image it deploys, so the
   history names the exact image behind a mutable tag such as `latest`.
-- **Building stays with Compose.** Wunjo deploys images that already exist in a
-  registry. To build an image, the operator runs `docker compose build`. Wunjo has no
-  builder of its own.
 - **Non-web workloads are first class.** A GPU job or a worker with no HTTP port uses
   the same file and the same commands as a web app.
-- **Kamal configuration converts once.** `wunjo import` reads an existing
-  `config/deploy.yml` and writes the matching services and `x-wunjo` blocks into
-  `compose.yaml`. The Kamal file stays in place, so the project can return to Kamal at
-  any time.
+- **Two ways in.** Wunjo reads `config/deploy.yml` directly, as Kamal does, with the
+  ERB subset described in [ERB in deploy.yml](#erb-in-deployyml). An operator who
+  wants one file runs `wunjo import` once. It writes the matching services and
+  `x-wunjo` blocks into `compose.yaml`. The Kamal file stays in place, so the project
+  can return to Kamal at any time.
+
+### The builder trusts an internal registry
+
+Kamal builds images with BuildKit, the build engine behind `docker buildx`. By default,
+Kamal 2.12.0 creates its builder with the following command, from
+`lib/kamal/commands/builder/local.rb`:
+
+```shell
+docker buildx create --name kamal-local-docker-container --driver=docker-container
+```
+
+The `docker-container` driver runs BuildKit inside its own container. That container
+does not read the host's `/etc/docker/certs.d/` or `insecure-registries`, and Kamal
+passes no BuildKit configuration to it. A push to a registry with an internal CA or
+plain HTTP then fails, however the host is configured. The `driver: docker` setting
+avoids the problem and loses multi-platform builds and the BuildKit cache.
+
+Wunjo keeps the Kamal builder and reads the trust settings from a top-level `x-wunjo`
+block in `config/deploy.yml`:
+
+```yaml
+registry:
+  server: harbor.lan:8443
+  username: deployer
+  password:
+    - HARBOR_PASSWORD
+
+x-wunjo:
+  registry:
+    ca: certs/harbor-ca.crt
+```
+
+Kamal 2.12.0 ignores keys that start with `x-` at the top level of `deploy.yml` and
+rejects them inside other sections, so the block sits at the top level. The same file
+still works with Kamal. For a registry without TLS, the block sets `http: true` instead
+of `ca`. In a Compose file, the same settings go under a top-level `x-wunjo` key. From this
+block, Wunjo writes a `buildkitd.toml` file:
+
+```toml
+[registry."harbor.lan:8443"]
+  ca = ["/etc/buildkit/harbor-ca.crt"]
+```
+
+Wunjo passes the file to `docker buildx create --buildkitd-config`. The builder name
+includes a hash of the CA file and of the generated configuration, so a new CA creates
+a new builder.
+
+### ERB in deploy.yml
+
+_ERB_ (Embedded Ruby) is the template language of Ruby, similar to Jinja2 in Ansible.
+Kamal renders `config/deploy.yml` through ERB before it parses the YAML, so a value such
+as `<%= ENV["GPU_HOST"] %>` reads an environment variable. ERB accepts any Ruby
+expression, and Go cannot run Ruby. Wunjo therefore supports a fixed subset.
+
+The following table lists the forms that Wunjo renders:
+
+| Form | Result |
+|---|---|
+| `<%= ENV["NAME"] %>` or `<%= ENV['NAME'] %>` | The value of `NAME`, or an empty string when `NAME` is unset. |
+| `<%= ENV.fetch("NAME") %>` | The value of `NAME`. Rendering stops with an error when `NAME` is unset. |
+| `<%= ENV.fetch("NAME", "default") %>` | The value of `NAME`, or `default` when `NAME` is unset. |
+| `<%= "text" %>` or `<%= 'text' %>` | The literal text. |
+| `<%# comment %>` | Nothing. |
+| `<%-` and `-%>` | Trim the whitespace and newline next to the tag, as Kamal's `trim_mode: "-"` does. |
+
+These results match Ruby's behavior for the same expressions. The same subset applies
+to accessory files with the `.erb` extension, which Kamal also renders.
+
+Any other expression stops rendering before Wunjo contacts a server. This includes
+statement tags such as `<% if %>`, method calls such as `ArchHelper.remote_arch`, and
+`ENV.fetch` with a block. The error names the file, the line, and the expression:
+
+```console
+config/deploy.yml:11: unsupported ERB expression: ArchHelper.remote_arch
+  Supported: ENV["NAME"], ENV.fetch("NAME"), ENV.fetch("NAME", "default"), "text"
+  Move the value into an environment variable and read it with ENV["NAME"].
+```
+
+The `.kamal/secrets` file is a different mechanism. It is a dotenv file with shell
+command substitution such as `$(op read …)`, and Wunjo ports it in full.
 
 ### Quiet output
 
@@ -273,6 +354,31 @@ cannot perform. Kamal has the same physical limit.
 
 Wunjo succeeds when the author prefers it to Kamal and deploys real services with it.
 
+## Implementation strategy
+
+Wunjo starts as a port of Kamal 2.12.0 (commit `e3ec7b6`) from Ruby to Go. The port
+comes first, and the Wunjo extensions follow as separate code. Kamal 2.12.0 has 8,623
+lines of Ruby in `lib/` and 11,945 lines of tests. The port follows three rules:
+
+1. **The port matches Kamal's behavior.** It keeps the commands, the flags, the
+    configuration keys, and the exact Docker command strings. Its internals follow Go
+    conventions and the code style in `AGENTS.md`, because ActiveSupport, Thor, and
+    Ruby metaprogramming have no Go equivalent.
+1. **Tests come first.** Each part of Kamal starts with its tests ported to Go. For
+    example, `test/commands/app_test.rb` expects an exact `docker run …` string for a
+    given fixture, and the Go test expects the same string. A part is done when its
+    ported tests pass.
+1. **The upstream version is pinned.** Each Go file names the Ruby file it ports. When
+    Kamal releases a new version, a diff of those Ruby files shows what to port next.
+
+The ported code lives in `internal/kamal/`. The extensions in this RFC live in
+`internal/wunjo/` and attach at four seams: the configuration loader, the command
+builders, the output renderer, and the deploy step. The extensions do not modify the
+ported code. The repository keeps Kamal's MIT copyright notice in a `NOTICE` file.
+
+The plan of record is
+[Port Kamal 2.12.0 to Go](../plans/port-kamal-to-go.md).
+
 ## Non-goals
 
 Wunjo does not do the following:
@@ -282,7 +388,6 @@ Wunjo does not do the following:
 - Require Ruby or any runtime besides a single Go binary.
 - Provision or configure servers.
 - Replace Kubernetes for workloads that need Kubernetes.
-- Build images. `docker compose build` does that.
 - Offer a log viewer or dashboard. `wunjo logs` fetches logs, and tools the operator
   already runs, such as Portainer, stay available for browsing them.
 
@@ -307,8 +412,8 @@ plus a short script cannot.
 
 ## Open questions
 
-The second interview round settled building, rollback, the proxy, secrets, and Kamal
-compatibility. The author asks reviewers to weigh in on the following points:
+The interview rounds settled the builder, ERB, rollback, the proxy, secrets, and the
+port strategy. The author asks reviewers to weigh in on the following points:
 
 1. **Services without a hostname.** Publishing ports directly forces a stop-then-start
     release. Is that acceptable for IP-only services on a LAN, or does a better route
@@ -325,6 +430,8 @@ compatibility. The author asks reviewers to weigh in on the following points:
 
 - Read [The letter from Naught](the-letter-from-naught.md) for the principles this RFC
   applies.
+- Read [Port Kamal 2.12.0 to Go](../plans/port-kamal-to-go.md) for the stages of the
+  port.
 - Read [Kamal 2](https://dev.37signals.com/kamal-2/) for the tool this RFC builds on.
 - Read the [Compose extension fields](https://docs.docker.com/reference/compose-file/extension/)
   reference for the `x-` mechanism.

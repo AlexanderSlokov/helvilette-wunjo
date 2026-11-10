@@ -1,8 +1,8 @@
 # Roadmap
 
 This roadmap lists the planned work for Helvilette Wunjo, a Go tool that deploys
-containers from a Compose file to the operator's own servers over SSH. Each item links
-to the document that holds its reasoning.
+containers to the operator's own servers over SSH. Wunjo starts as a port of Kamal and
+then adds its own extensions. Each item links to the document that holds its reasoning.
 
 ## Phase 0: Proposal
 
@@ -14,7 +14,29 @@ The project will settle why Wunjo exists and what it proposes before writing cod
 - Collect comments from colleagues and AI agents on the draft.
 - Resolve the open questions on routing without a hostname, the scope of
   `wunjo import`, drift, and secret backends.
-- Agree on the target version of the first release.
+
+## Phase 1: Port Kamal 2.12.0 to Go (target 0.1.0)
+
+Wunjo will behave like Kamal 2.12.0, command for command, as a single Go binary. See
+[Port Kamal 2.12.0 to Go](docs/plans/port-kamal-to-go.md).
+
+- Port Kamal's tests first, and match every Docker command string.
+- Render the ERB subset that the RFC defines, and reject other ERB with a clear error.
+- Keep Kamal's MIT notice in `NOTICE`.
+- Finish when the author deploys a real service from an unchanged `config/deploy.yml`.
+
+## Phase 2: Wunjo extensions (target 0.2.0)
+
+Wunjo will add the features that Kamal leaves out, as separate code on top of the port.
+See [RFC 0001: Proposal](docs/explanation/rfc-0001-why-helvilette-wunjo.md#proposal).
+
+- Let the builder trust a registry with an internal CA or plain HTTP.
+- Read a Compose file with `x-wunjo` blocks, and convert Kamal files with
+  `wunjo import`.
+- Route services that have no hostname.
+- Record the image digest of every deploy.
+- Print one line per service on success and a short report on failure.
+- Preview changes with `wunjo plan`, including GPU services that must stop first.
 
 ## Later
 
