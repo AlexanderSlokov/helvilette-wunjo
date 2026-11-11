@@ -34,11 +34,14 @@ type Backend interface {
 	AlwaysSucceeds() bool
 }
 
-// Upload is what Session.Upload sends: a local file, or content held in memory.
+// Upload is what Session.Upload sends: a local file, content held in memory, or a
+// directory tree held in memory, which lands as <remote>/<base of LocalPath>, as a
+// recursive SCP upload does.
 type Upload struct {
 	LocalPath string
 	Content   []byte
 	InMemory  bool
+	Tree      map[string][]byte
 	Mode      string
 }
 

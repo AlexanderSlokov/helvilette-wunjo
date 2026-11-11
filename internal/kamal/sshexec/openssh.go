@@ -1,11 +1,13 @@
 package sshexec
 
 import (
+	"archive/tar"
 	"bytes"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -95,13 +97,9 @@ func (e *ConnectionError) Error() string {
 
 // Upload writes content to remote with cat, then sets its mode, as an SCP upload.
 func (o *OpenSSH) Upload(host string, content Upload, remote string, out *Formatter) error {
-	body, err := uploadBody(content)
+	body, command, err := uploadPlan(content, remote)
 	if err != nil {
 		return err
-	}
-	command := "cat > " + shellQuote(remote)
-	if content.Mode != "" {
-		command += " && chmod " + content.Mode + " " + shellQuote(remote)
 	}
 	err = o.DNS.Do(host, out, func() error {
 		result, err := o.runOnce(host, command, bytes.NewReader(body.Bytes()), "", NewFormatter(io.Discard, false))
@@ -264,6 +262,49 @@ func sshLogLevel(level string) string {
 	default:
 		return "ERROR"
 	}
+}
+
+// uploadPlan returns what to send and the remote command that writes it.
+func uploadPlan(content Upload, remote string) (*bytes.Buffer, string, error) {
+	if content.Tree != nil {
+		return treePlan(content, remote)
+	}
+	body, err := uploadBody(content)
+	command := "cat > " + shellQuote(remote)
+	if content.Mode != "" {
+		command += " && chmod " + content.Mode + " " + shellQuote(remote)
+	}
+	return body, command, err
+}
+
+// treePlan sends a tar stream that unpacks into <remote>/<base>.
+func treePlan(content Upload, remote string) (*bytes.Buffer, string, error) {
+	target := shellQuote(remote + "/" + filepath.Base(content.LocalPath))
+	body, err := tarTree(content.Tree)
+	command := "mkdir -p " + target + " && tar -xf - -C " + target
+	if content.Mode != "" {
+		command += " && chmod " + content.Mode + " " + target
+	}
+	return body, command, err
+}
+
+func tarTree(files map[string][]byte) (*bytes.Buffer, error) {
+	var buf bytes.Buffer
+	tw := tar.NewWriter(&buf)
+	names := make([]string, 0, len(files))
+	for name := range files {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		if err := tw.WriteHeader(&tar.Header{Name: name, Mode: 0o644, Size: int64(len(files[name]))}); err != nil {
+			return nil, err
+		}
+		if _, err := tw.Write(files[name]); err != nil {
+			return nil, err
+		}
+	}
+	return &buf, tw.Close()
 }
 
 func uploadBody(content Upload) (*bytes.Buffer, error) {

@@ -6,6 +6,7 @@ package cli
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -336,11 +337,28 @@ func (c *CLI) uploadErrorPages(s *sshexec.Session) error {
 	if err != nil || len(pages) == 0 {
 		return err
 	}
+	tree, err := c.errorPageTree(pages)
+	if err != nil {
+		return err
+	}
 	if err := s.Execute(cmd(c.kamal.App(nil, "").CreateErrorPagesDirectory())); err != nil {
 		return err
 	}
-	remote := filepath.Join(c.config().ProxyBoot().ErrorPagesDirectory(), c.config().Version())
-	return c.uploadPages(s, pages, remote)
+	local := filepath.Join(os.TempDir(), "kamal-error-pages", c.config().Version())
+	return s.Upload(sshexec.Upload{LocalPath: local, Tree: tree, Mode: "0700"}, c.config().ProxyBoot().ErrorPagesDirectory())
+}
+
+// errorPageTree reads the pages into the <version> directory that Kamal uploads.
+func (c *CLI) errorPageTree(pages []string) (map[string][]byte, error) {
+	tree := map[string][]byte{}
+	for _, page := range pages {
+		content, err := c.rt.Files.ReadFile(page)
+		if err != nil {
+			return nil, err
+		}
+		tree[filepath.Base(page)] = content
+	}
+	return tree, nil
 }
 
 func (c *CLI) errorPageFiles(dir string) ([]string, error) {
@@ -353,16 +371,4 @@ func (c *CLI) errorPageFiles(dir string) ([]string, error) {
 		pages = append(pages, matches...)
 	}
 	return pages, nil
-}
-
-func (c *CLI) uploadPages(s *sshexec.Session, pages []string, remote string) error {
-	if err := s.Execute(cmd(words("mkdir", "-p", remote))); err != nil {
-		return err
-	}
-	for _, page := range pages {
-		if err := s.Upload(sshexec.Upload{LocalPath: page, Mode: "0700"}, filepath.Join(remote, filepath.Base(page))); err != nil {
-			return err
-		}
-	}
-	return nil
 }

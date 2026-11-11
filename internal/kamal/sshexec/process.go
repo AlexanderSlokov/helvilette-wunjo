@@ -103,11 +103,11 @@ func (l Local) Run(host string, cmd Command, id string, out *Formatter) (Result,
 
 // Upload writes the content to remote on this machine.
 func (l Local) Upload(host string, content Upload, remote string, out *Formatter) error {
-	body, err := uploadBody(content)
+	body, command, err := uploadPlan(content, remote)
 	if err != nil {
 		return err
 	}
-	status, err := l.Processes.RunProcess(Process{Name: "/bin/sh", Args: []string{"-c", "cat > " + shellQuote(remote)}, Stdin: body})
+	status, err := l.Processes.RunProcess(Process{Name: "/bin/sh", Args: []string{"-c", command}, Stdin: body})
 	return statusError("upload to "+remote, status, err)
 }
 

@@ -31,6 +31,8 @@ type stub struct {
 	fail   string
 	// only limits the stub to captures ("capture") or executes ("execute").
 	only string
+	// outputs, when set, gives the output of each matching call in turn.
+	outputs func() string
 }
 
 func (s stub) applies(cmd sshexec.Command) bool {
@@ -50,6 +52,7 @@ type fakeHosts struct {
 	mu       sync.Mutex
 	stubs    []stub
 	executed []string
+	env      map[string][]map[string]string
 	printer  sshexec.Printer
 }
 
@@ -57,6 +60,7 @@ func (f *fakeHosts) Run(host string, cmd sshexec.Command, id string, out *sshexe
 	text := cmd.ToCommand()
 	f.mu.Lock()
 	f.executed = append(f.executed, host+": "+text)
+	f.recordEnv(text, cmd.ProcessEnv)
 	stubs := append([]stub(nil), f.stubs...)
 	f.mu.Unlock()
 	for _, s := range stubs {
@@ -67,9 +71,56 @@ func (f *fakeHosts) Run(host string, cmd sshexec.Command, id string, out *sshexe
 	return f.printer.Run(host, cmd, id, out)
 }
 
+func (f *fakeHosts) recordEnv(text string, env []sshexec.EnvVar) {
+	if f.env == nil {
+		f.env = map[string][]map[string]string{}
+	}
+	values := map[string]string{}
+	for _, v := range env {
+		values[v.Key] = v.Value
+	}
+	f.env[text] = append(f.env[text], values)
+}
+
+// processEnvOf returns the process env of the first run of a local command such as
+// ".kamal/hooks/pre-app-boot".
+func (f *fakeHosts) processEnvOf(path string) map[string]string {
+	runs := f.env["/usr/bin/env "+path]
+	if len(runs) == 0 {
+		return nil
+	}
+	return runs[0]
+}
+
+// processEnvValues returns one variable from every run of a local command.
+func (f *fakeHosts) processEnvValues(path, key string) []string {
+	var values []string
+	for _, run := range f.env["/usr/bin/env "+path] {
+		values = append(values, run[key])
+	}
+	return values
+}
+
+// sequenceStub returns the outputs in turn for captures that match, then repeats
+// the last one, as Mocha's returns(a, b) does.
+func sequenceStub(match func(string) bool, outputs ...string) stub {
+	var mu sync.Mutex
+	calls := 0
+	return stub{only: "capture", match: func(text string) bool { return match(text) }, outputs: func() string {
+		mu.Lock()
+		defer mu.Unlock()
+		out := outputs[min(calls, len(outputs)-1)]
+		calls++
+		return out
+	}}
+}
+
 func stubResult(cmd sshexec.Command, s stub) (sshexec.Result, error) {
 	if s.fail != "" {
 		return sshexec.Result{}, &sshexec.FailedError{Message: s.fail}
+	}
+	if s.outputs != nil {
+		return sshexec.Result{Stdout: s.outputs(), Completed: true}, nil
 	}
 	return sshexec.Result{Stdout: s.output, Completed: true}, nil
 }
@@ -91,6 +142,10 @@ type world struct {
 	local         *fakeHosts
 	out           syncBuffer
 	errOut        syncBuffer
+	sleeps        []time.Duration
+	tty           bool
+	clockMu       sync.Mutex
+	elapsed       time.Duration
 	execs         []string
 	invokes       []string
 	recordInvokes bool
@@ -158,7 +213,7 @@ func (w *world) newCLI() *CLI {
 		Substitution: secrets.Substitution{Shell: sh, Lookup: w.env.Lookup}, WorkDir: "/k", TempDir: "/tmp",
 		RandomHex: func() string { return "0123456789abcdef" }}
 	runtime := commands.Runtime{Now: func() time.Time { return recordedAt }, Performer: "deployer@example.com", Git: git.Git{Shell: sh},
-		RandomHex: func(n int) string { return strings.Repeat("a1", n) }, Files: w.files, WorkDir: "/k"}
+		RandomHex: func(n int) string { return strings.Repeat("a1", n) }, StdinTTY: w.tty, Files: w.files, WorkDir: "/k"}
 	c := New(commander.New(env, runtime, false), w.runtime())
 	if w.recordInvokes {
 		c.invoke = func(name string, args []string, opts Options) error {
@@ -169,6 +224,21 @@ func (w *world) newCLI() *CLI {
 	return c
 }
 
+// sleep records the pause and moves the test clock forward, as real time passes in
+// the Ruby tests that stub sleep.
+func (w *world) sleep(d time.Duration) {
+	w.clockMu.Lock()
+	defer w.clockMu.Unlock()
+	w.sleeps = append(w.sleeps, d)
+	w.elapsed += d
+}
+
+func (w *world) now() time.Time {
+	w.clockMu.Lock()
+	defer w.clockMu.Unlock()
+	return recordedAt.Add(w.elapsed)
+}
+
 var recordedAt = time.Date(2026, 11, 11, 10, 30, 0, 0, time.UTC)
 
 func (w *world) runtime() Runtime {
@@ -176,7 +246,7 @@ func (w *world) runtime() Runtime {
 		Remote: func(*configuration.Configuration) sshexec.Backend { return w.hosts }, Local: w.local,
 		Exec:    func(command string) error { w.execs = append(w.execs, command); return nil },
 		Forward: func([]string, int, sshexec.Options) (func(), error) { return func() {}, nil },
-		Sleep:   func(time.Duration) {}, Now: func() time.Time { return recordedAt },
+		Sleep:   w.sleep, Now: w.now,
 		RandomHex: func(n int) string { return strings.Repeat("a1", n) }, Files: fakeLocalFiles{w.files},
 		Getenv: func(name string) (string, bool) {
 			if name == "PWD" {
