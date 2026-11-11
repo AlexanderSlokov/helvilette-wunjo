@@ -1,0 +1,12 @@
+service: app
+image: dhh/app
+servers:
+  web:
+    - "1.1.1.1"
+    - "1.1.1.2"
+registry:
+  server: localhost:5000
+
+builder:
+  arch: <%= ArchHelper.remote_arch %>
+  remote: ssh://app@1.1.1.5
