@@ -13,3 +13,7 @@ All notable changes to Helvilette Wunjo are listed here. The format follows
   writes `bin/wunjo`.
 - **The `NOTICE` file carries Kamal's MIT notice.** The port ships Kamal's 45 test
   fixtures and its configuration documents, which the validator reads.
+- **Wunjo renders the ERB subset of RFC 0001 in deploy files and accessory files.**
+  `ENV["NAME"]`, `ENV.fetch`, string literals, comments, and the `<%-` and `-%>`
+  markers give the same result as Ruby 3.4. Any other expression stops before Wunjo
+  contacts a server, with an error that names the file, the line, and the expression.

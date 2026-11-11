@@ -7,14 +7,6 @@ task: port the Ruby tests first, match each Docker command string to the charact
 and name the Ruby source file at the top of each Go file. No GitHub issues exist for
 these tasks yet.
 
-## ERB renderer
-
-The following task renders the ERB subset from the RFC:
-
-| ID | Task | Files | Depends on | Done when |
-|---|---|---|---|---|
-| WJ-010 | Render the ERB subset defined in [ERB in deploy.yml](docs/explanation/rfc-0001-why-helvilette-wunjo.md#erb-in-deployyml). | `internal/kamal/erb/` | None | Each supported form has a passing test, each unsupported form returns an error with file, line, and expression, and all 45 fixtures render after the documented `ArchHelper` replacements. |
-
 ## Configuration
 
 The following tasks port the configuration loader and the secret files:
@@ -23,7 +15,7 @@ The following tasks port the configuration loader and the secret files:
 |---|---|---|---|---|
 | WJ-020 | Wrap the YAML parser to keep key order and apply YAML 1.1 rules where Kamal depends on them. | `internal/kamal/yamlord/` | None | Tests show that key order survives a round trip and that `yes` and `on` parse as booleans. |
 | WJ-021 | Port the secret file loader, inline command substitution, `env_file.rb`, `git.rb`, `tags.rb`, and `utils/`. | `internal/kamal/secrets/`, `internal/kamal/envfile/`, `internal/kamal/utils/` | None | The ported `test/secrets_test.rb`, `test/secrets/dotenv_inline_command_substitution_test.rb`, `test/env_file_test.rb`, `test/git_test.rb`, and `test/utils_test.rb` pass. |
-| WJ-022 | Port `configuration.rb`, `configuration/`, and the validators. | `internal/kamal/configuration/` | WJ-010, WJ-020, WJ-021 | The ported `test/configuration_test.rb` and `test/configuration/` pass, including the validation error messages. |
+| WJ-022 | Port `configuration.rb`, `configuration/`, and the validators. | `internal/kamal/configuration/` | WJ-020, WJ-021 | The ported `test/configuration_test.rb` and `test/configuration/` pass, including the validation error messages. |
 
 ## Command builders
 
