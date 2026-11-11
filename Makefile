@@ -1,7 +1,11 @@
-.PHONY: test vet build fmt
+.PHONY: test test-integration vet build fmt
 
 test: vet
 	go test ./...
+
+# Needs Docker and the OpenSSH client tools; starts sshd in a container.
+test-integration: vet
+	go test -tags integration -count=1 ./internal/kamal/sshexec/
 
 vet:
 	go vet ./...

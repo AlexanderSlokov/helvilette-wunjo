@@ -7,21 +7,13 @@ task: port the Ruby tests first, match each Docker command string to the charact
 and name the Ruby source file at the top of each Go file. No GitHub issues exist for
 these tasks yet.
 
-## SSH execution
-
-The following task replaces SSHKit:
-
-| ID | Task | Files | Depends on | Done when |
-|---|---|---|---|---|
-| WJ-040 | Build the parallel SSH runner with `~/.ssh/config`, ProxyJump, proxy commands, the SSH agent, and DNS retry, and port `commander.rb`. | `internal/kamal/sshexec/`, `internal/kamal/commander/` | None | The ported `test/commander_test.rb`, `test/configuration/ssh_test.rb`, `test/configuration/sshkit_test.rb`, and `test/sshkit_dns_retry_test.rb` pass against a named fake runner, and one command runs on a real host through the SSH agent. |
-
 ## Command-line interface
 
 The following task ports the `wunjo` commands:
 
 | ID | Task | Files | Depends on | Done when |
 |---|---|---|---|---|
-| WJ-050 | Port `cli/`: deploy, redeploy, rollback, app, accessory, proxy, build, registry, server, lock, prune, secrets, aliases, hooks, and the health-check poller. | `internal/kamal/cli/`, `cmd/wunjo/` | WJ-040 | The ported `test/cli/` tests pass with the fake runner, and `wunjo --help` lists the same commands as `kamal --help` at version 2.12.0. |
+| WJ-050 | Port `cli/`: deploy, redeploy, rollback, app, accessory, proxy, build, registry, server, lock, prune, secrets, aliases, hooks, and the health-check poller. | `internal/kamal/cli/`, `cmd/wunjo/` | None | The ported `test/cli/` tests pass with the fake runner, and `wunjo --help` lists the same commands as `kamal --help` at version 2.12.0. |
 
 ## Secret adapters
 

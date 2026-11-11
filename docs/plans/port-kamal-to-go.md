@@ -58,6 +58,19 @@ them:
     Some Kamal fixtures call `ArchHelper.remote_arch`. The Go tests replace those calls
     with an environment variable and record each replacement in the test file.
 
+## Known differences from Kamal
+
+The port differs from Kamal 2.12.0 in the following ways:
+
+- **Project SSH config.** net-ssh also reads `./.ssh/config` in the working directory.
+    OpenSSH reads only `~/.ssh/config` and the system file, unless `ssh/config` in
+    `deploy.yml` names other files.
+- **Uploads.** SSHKit uploads with SCP. The port pipes the content into `cat` over the
+    same connection and runs `chmod` when the file has a mode.
+- **Control path length.** OpenSSH keeps each connection in a Unix socket, whose path
+    must stay under 108 bytes, so the control directory lives directly under the
+    system temporary directory.
+
 ## Stages
 
 ### Stage 0: Scaffold
@@ -197,6 +210,7 @@ The author settled the following choices on 2026-11-11:
 | Command-line library | `spf13/cobra`, the standard in the Go ecosystem, behind an interface owned by this project. |
 | Go version | Go 1.27, the latest stable release. `go.mod` sets `go 1.27`, and the toolchain is 1.27.3 or later. |
 | Release | The finished port ships as version 0.1.0. |
+| SSH client | The port runs the operator's OpenSSH `ssh` binary, with one ControlMaster connection per host, in place of net-ssh. OpenSSH reads `~/.ssh/config`, ProxyJump, and the agent as every other `ssh` command does. Chosen during stage 4 on 2026-11-11; the author can revisit it. |
 
 ## Before you begin
 

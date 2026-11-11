@@ -31,3 +31,7 @@ All notable changes to Helvilette Wunjo are listed here. The format follows
 - **Wunjo builds the same Docker commands as Kamal 2.12.0.** App, accessory, proxy,
   builder (local, remote, hybrid, pack, and cloud), registry, lock, prune, audit, and
   hook commands match Kamal's 215 command tests to the character.
+- **Wunjo runs commands on hosts with your own `ssh` client.** It keeps one connection
+  per host open, starts at most `sshkit/max_concurrent_starts` connections at once,
+  retries DNS failures, and logs each command in SSHKit's format. `make
+  test-integration` runs a command on sshd in Docker through an SSH agent.
