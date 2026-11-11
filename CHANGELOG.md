@@ -49,3 +49,9 @@ All notable changes to Helvilette Wunjo are listed here. The format follows
   `2026-11-11T10-30-00_staging_app_boot.log`, with every command line and its
   result. `otel` sends the same lines and start and end events to an OTLP/HTTP
   collector.
+- **Kamal's integration suite passes with the `wunjo` binary.** `make
+  test-integration` deploys Kamal's seven sample apps to Docker hosts in containers
+  and runs the 17 ported tests, which pass in 454 seconds at commit `2dfa0f6`, as
+  [the session record](docs/references/sessions/2026-11-11-integration-suite.md)
+  shows. The suite found four differences from Kamal, now fixed, among them error
+  pages that kamal-proxy could not read.

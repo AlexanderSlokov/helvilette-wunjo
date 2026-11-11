@@ -13,6 +13,5 @@ The following tasks prove the port end to end and release it:
 
 | ID | Task | Files | Depends on | Done when |
 |---|---|---|---|---|
-| WJ-080 | Port the integration suite in `test/integration/`. | `test/integration/` | None | The ported integration tests pass with the `wunjo` binary. |
-| WJ-081 | Deploy one of the author's real services from its existing `config/deploy.yml`. | None | WJ-080 | `wunjo deploy` succeeds without edits to the file, and the author accepts the result. |
+| WJ-081 | Deploy one of the author's real services from its existing `config/deploy.yml`. | None | None | `wunjo deploy` succeeds without edits to the file, and the author accepts the result. |
 | WJ-090 | Release version 0.1.0. | `CHANGELOG.md` | WJ-081 | Tag `v0.1.0` exists, and `CHANGELOG.md` describes the release. |
