@@ -163,3 +163,128 @@ func (c *commandCase) app(t *testing.T, role, host string) *App {
 	cfg := c.config(t)
 	return NewApp(NewBase(cfg, c.runtime()), cfg.Role(role), host)
 }
+
+// must fails the test on an error and returns the line.
+func must(t *testing.T) func(Line, error) Line {
+	return func(line Line, err error) Line {
+		t.Helper()
+		if err != nil {
+			t.Fatal(err)
+		}
+		return line
+	}
+}
+
+// must2 fails the test on an error and returns the text.
+func must2(t *testing.T) func(string, error) string {
+	return func(text string, err error) string {
+		t.Helper()
+		if err != nil {
+			t.Fatal(err)
+		}
+		return text
+	}
+}
+
+const accessoryDeploy = `
+service: app
+image: dhh/app
+registry: {server: private.registry, username: dhh, password: secret}
+servers: [1.1.1.1]
+builder: {arch: amd64}
+accessories:
+  mysql:
+    image: private.registry/mysql:8.0
+    host: 1.1.1.5
+    port: "127.0.0.1:3306:3306"
+    env: {clear: {MYSQL_ROOT_HOST: "%"}, secret: [MYSQL_ROOT_PASSWORD]}
+    options: {cpus: "4", memory: 2GB}
+  redis:
+    image: redis:latest
+    host: 1.1.1.6
+    port: "127.0.0.1:6379:6379"
+    labels: {cache: "true"}
+    env: {SOMETHING: else}
+    volumes: [/var/lib/redis:/data]
+  busybox:
+    service: custom-busybox
+    image: busybox:latest
+    registry: {server: other.registry, username: user, password: pw}
+    host: 1.1.1.7
+    proxy: {host: busybox.example.com}
+`
+
+func newAccessoryCase(t *testing.T) *commandCase {
+	c := newCase(t, accessoryDeploy).secrets("MYSQL_ROOT_PASSWORD=secret123")
+	c.version = ""
+	c.processEnv["VERSION"] = "999"
+	return c
+}
+
+func (c *commandCase) accessory(t *testing.T, name string) *Accessory {
+	t.Helper()
+	return NewAccessory(c.base(t), name)
+}
+
+const simpleDeploy = `
+service: app
+image: dhh/app
+registry: {username: dhh, password: secret}
+servers: [1.1.1.1]
+builder: {arch: amd64}
+`
+
+func newProxyCase(t *testing.T) *commandCase {
+	c := newCase(t, simpleDeploy)
+	c.version = "123"
+	return c
+}
+
+func (c *commandCase) proxy(t *testing.T) *Proxy {
+	t.Helper()
+	return NewProxy(c.base(t), "1.1.1.1")
+}
+
+func newBuilderCase(t *testing.T) *commandCase {
+	c := newCase(t, simpleDeploy+"builder: {arch: amd64}\n")
+	c.version = "123"
+	c.files["/home/app/project/Dockerfile"] = ""
+	c.results["git rev-parse"] = localshell.Result{Success: true}
+	c.results["git rev-parse HEAD"] = gitResult("0123456789abcdef0123456789abcdef01234567")
+	c.results["git rev-parse --show-toplevel"] = gitResult("/home/app/project")
+	return c
+}
+
+func gitResult(stdout string) localshell.Result {
+	return localshell.Result{Stdout: stdout + "\n", Success: true}
+}
+
+// deep returns a copy with the JSON value deep-merged under key, as
+// @config.deep_merge(key => value) does.
+func (c *commandCase) deep(t *testing.T, key, value string) *commandCase {
+	t.Helper()
+	copy := *c
+	merged := yamlord.OrderedOf(yamlord.Pair{Key: key, Value: parseValue(t, value)})
+	copy.raw = c.raw.DeepMerge(merged)
+	return &copy
+}
+
+func (c *commandCase) builder(t *testing.T) Builder {
+	t.Helper()
+	return Builder{c.base(t)}
+}
+
+// builderNameOf returns the private builder name of the target driver, as
+// target.send(:builder_name) does.
+func builderNameOf(t *testing.T, b Builder) string {
+	t.Helper()
+	named, ok := b.Target().(interface{ builderName() (string, error) })
+	if !ok {
+		t.Fatalf("%s builder has no name", b.Name())
+	}
+	name, err := named.builderName()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return name
+}

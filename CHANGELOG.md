@@ -28,3 +28,6 @@ All notable changes to Helvilette Wunjo are listed here. The format follows
   accessories, env tags, proxy, builder, SSH, and destination files load in Kamal's
   order, and an invalid file fails with Kamal's error message, such as
   `servers/web/hosts: should be an array`.
+- **Wunjo builds the same Docker commands as Kamal 2.12.0.** App, accessory, proxy,
+  builder (local, remote, hybrid, pack, and cloud), registry, lock, prune, audit, and
+  hook commands match Kamal's 215 command tests to the character.

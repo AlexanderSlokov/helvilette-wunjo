@@ -7,14 +7,6 @@ task: port the Ruby tests first, match each Docker command string to the charact
 and name the Ruby source file at the top of each Go file. No GitHub issues exist for
 these tasks yet.
 
-## Command builders
-
-The following task ports the Docker command strings:
-
-| ID | Task | Files | Depends on | Done when |
-|---|---|---|---|---|
-| WJ-030 | Port `commands/` and `commands.rb`, including the builder drivers. | `internal/kamal/commands/` | None | All 215 ported tests from `test/commands/` pass with the same strings as Kamal. |
-
 ## SSH execution
 
 The following task replaces SSHKit:
@@ -29,7 +21,7 @@ The following task ports the `wunjo` commands:
 
 | ID | Task | Files | Depends on | Done when |
 |---|---|---|---|---|
-| WJ-050 | Port `cli/`: deploy, redeploy, rollback, app, accessory, proxy, build, registry, server, lock, prune, secrets, aliases, hooks, and the health-check poller. | `internal/kamal/cli/`, `cmd/wunjo/` | WJ-030, WJ-040 | The ported `test/cli/` tests pass with the fake runner, and `wunjo --help` lists the same commands as `kamal --help` at version 2.12.0. |
+| WJ-050 | Port `cli/`: deploy, redeploy, rollback, app, accessory, proxy, build, registry, server, lock, prune, secrets, aliases, hooks, and the health-check poller. | `internal/kamal/cli/`, `cmd/wunjo/` | WJ-040 | The ported `test/cli/` tests pass with the fake runner, and `wunjo --help` lists the same commands as `kamal --help` at version 2.12.0. |
 
 ## Secret adapters
 
