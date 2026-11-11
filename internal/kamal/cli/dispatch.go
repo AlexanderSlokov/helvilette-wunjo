@@ -35,7 +35,7 @@ func (c *CLI) execute(args []string) error {
 func (c *CLI) frame(s spec, parent []string) *cliframe.Command {
 	path := append(append([]string{}, parent...), s.name)
 	cmd := &cliframe.Command{Name: s.name, ArgsUsage: s.args, Short: s.desc, Hidden: s.hidden,
-		MinArgs: s.minArgs, MaxArgs: s.maxArgs, Flags: toFrameFlags(s.flags)}
+		MinArgs: s.minArgs, MaxArgs: s.maxArgs, Flags: toFrameFlags(s.flags), PassUnknownFlags: s.maxArgs == anyArgs}
 	if s.run != nil {
 		cmd.Run = func(inv *cliframe.Invocation) error {
 			return c.start(path, inv.Args, optionsFrom(inv, append(append([]flag{}, classOptions...), s.flags...)), s.run)

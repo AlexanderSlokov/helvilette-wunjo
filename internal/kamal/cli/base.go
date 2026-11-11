@@ -23,6 +23,9 @@ func (c *CLI) config() *configuration.Configuration { return c.kamal.MustConfig(
 // say prints a message, colored when stdout is a terminal, as Thor's say does: a
 // newline follows unless the message ends with a space or a tab.
 func (c *CLI) say(message, color string) {
+	if c.globals.Bool("raw") {
+		return
+	}
 	text := message
 	if color != "" && c.rt.StdoutTTY {
 		text = thorColor(color) + message + "\033[0m"

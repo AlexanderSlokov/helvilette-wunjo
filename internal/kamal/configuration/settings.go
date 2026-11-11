@@ -191,6 +191,8 @@ func (c *Configuration) absolutePath(path string) string {
 }
 
 func (c *Configuration) dockerArch() string {
+	c.lazyMu.Lock()
+	defer c.lazyMu.Unlock()
 	if c.arch == nil {
 		arch, _ := utils.DockerArch(c.env.Shell)
 		c.arch = &arch
@@ -198,6 +200,8 @@ func (c *Configuration) dockerArch() string {
 	return *c.arch
 }
 
+// gitUsed reads c.gitIsUsed without the lock; version computation already holds it,
+// so callers outside it go through gitUsedLocked.
 func (c *Configuration) gitUsed() bool {
 	if c.gitIsUsed == nil {
 		used := c.env.Git.Shell != nil && c.env.Git.Used()

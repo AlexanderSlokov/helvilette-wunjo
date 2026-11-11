@@ -79,6 +79,19 @@ func TestStringListFlagRepeats(t *testing.T) {
 	}
 }
 
+func TestPassUnknownFlagsKeepsThemAsArgs(t *testing.T) {
+	rec := &recordingRun{}
+	exec := &Command{Name: "exec", MaxArgs: AnyArgs, PassUnknownFlags: true, Flags: []Flag{{Name: "raw", Kind: BoolFlag}}, Run: rec.run}
+	tree := &Command{Name: "wunjo", GlobalFlags: []Flag{{Name: "config-file", Short: "c", Kind: StringFlag}}, Children: []*Command{exec}}
+	var out bytes.Buffer
+	if err := Execute(tree, []string{"exec", "date", "-j", "--raw", "-c", "x.yml"}, &out, &out); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Join(rec.got.Args, " ") != "date -j" || !rec.got.Bool("raw") || rec.got.String("config-file") != "x.yml" {
+		t.Fatalf("args %v raw %v config %q", rec.got.Args, rec.got.Bool("raw"), rec.got.String("config-file"))
+	}
+}
+
 func TestCommandWithoutArgsRejectsArgs(t *testing.T) {
 	_, err := execute(t, &recordingRun{}, "deploy", "extra")
 	if err == nil {

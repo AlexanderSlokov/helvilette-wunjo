@@ -26,6 +26,8 @@ type versionResult struct {
 
 // SetVersion sets the declared version, as `--version` does.
 func (c *Configuration) SetVersion(version string) {
+	c.lazyMu.Lock()
+	defer c.lazyMu.Unlock()
 	c.declaredVersion = version
 	c.version = nil
 }
@@ -34,6 +36,8 @@ func (c *Configuration) SetVersion(version string) {
 // with _uncommitted_<random> when the tree has changes and Kamal builds from the
 // working directory.
 func (c *Configuration) ResolveVersion() (string, error) {
+	c.lazyMu.Lock()
+	defer c.lazyMu.Unlock()
 	if c.version == nil {
 		value, err := c.computeVersion()
 		c.version = &versionResult{value: value, err: err}

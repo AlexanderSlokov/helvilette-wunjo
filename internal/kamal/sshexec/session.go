@@ -160,8 +160,9 @@ func PutsByHost(out func(string), host, output, kind string, quiet, raw bool) {
 		out(output)
 		return
 	}
+	text := output + "\n\n"
 	if !quiet {
-		out(kind + " Host: " + host + "\n")
+		text = kind + " Host: " + host + "\n" + text
 	}
-	out(output + "\n\n")
+	out(text)
 }

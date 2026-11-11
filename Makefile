@@ -1,7 +1,7 @@
 .PHONY: test test-integration vet build fmt
 
 test: vet
-	go test ./...
+	go test -race ./...
 
 # Needs Docker and the OpenSSH client tools; starts sshd in a container.
 test-integration: vet

@@ -6,6 +6,7 @@ package configuration
 
 import (
 	"io"
+	"sync"
 	"os"
 
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/git"
@@ -79,6 +80,9 @@ type Configuration struct {
 	ssh         *SSH
 	sshkit      *Sshkit
 
+	// lazyMu guards the values computed on first use, which parallel host
+	// sessions read at once.
+	lazyMu    sync.Mutex
 	version   *versionResult
 	arch      *string
 	gitIsUsed *bool

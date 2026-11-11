@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/utils"
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/yamlord"
@@ -18,6 +19,7 @@ import (
 type Builder struct {
 	cfg    *Configuration
 	config *yamlord.Ordered
+	once   sync.Once
 	arches *archSplit
 }
 
@@ -63,10 +65,10 @@ func (b *Builder) LocalArches() []string { return b.split().local }
 func (b *Builder) RemoteArches() []string { return b.split().remote }
 
 func (b *Builder) split() *archSplit {
-	if b.arches == nil {
+	b.once.Do(func() {
 		local := b.computeLocalArches()
 		b.arches = &archSplit{local: local, remote: b.computeRemoteArches(local)}
-	}
+	})
 	return b.arches
 }
 

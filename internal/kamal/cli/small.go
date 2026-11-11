@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/shell"
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/sshexec"
@@ -122,11 +123,14 @@ func (c *CLI) serverExec(args []string, opts Options) error {
 
 func (c *CLI) serverBootstrap(opts Options) error {
 	return c.modify(true, func() error {
+		var mu sync.Mutex
 		var missing []string
 		err := c.on(opts, c.kamal.Hosts(), func(s *sshexec.Session) error {
 			ok, err := c.installDocker(s)
 			if err == nil && !ok {
+				mu.Lock()
 				missing = append(missing, s.Host)
+				mu.Unlock()
 			}
 			return err
 		})

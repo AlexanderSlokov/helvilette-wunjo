@@ -70,6 +70,7 @@ type spec struct {
 	flags            []flag
 	run              func(args []string, opts Options) error
 	children         []spec
+	passUnknownFlags bool
 }
 
 func toFrameFlags(flags []flag) []cliframe.Flag {

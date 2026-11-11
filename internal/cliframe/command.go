@@ -50,6 +50,9 @@ type Command struct {
 	GlobalFlags []Flag
 	Children    []*Command
 	Run         func(inv *Invocation) error
+	// PassUnknownFlags keeps flags the command does not declare as positional
+	// arguments, as Thor does for `exec date -j`. Declared flags still parse.
+	PassUnknownFlags bool
 }
 
 // Invocation carries the positional arguments, the parsed flags, and the output
