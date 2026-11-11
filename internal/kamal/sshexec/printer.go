@@ -13,11 +13,13 @@ import (
 type Printer struct {
 	Print          func(string)
 	CapturedOutput map[string]string
+	// User shows commands "as <user>@<host>", as SSHKit's local host does.
+	User string
 }
 
 // Run logs the start of cmd and returns the scripted output, if any.
 func (p *Printer) Run(host string, cmd Command, id string, out *Formatter) (Result, error) {
-	out.commandStart(cmd, host, id)
+	out.commandStart(cmd, host, p.User, id)
 	return Result{Stdout: p.CapturedOutput[cmd.ToCommand()]}, nil
 }
 

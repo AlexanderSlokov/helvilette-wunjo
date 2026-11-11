@@ -50,7 +50,7 @@ type OpenSSH struct {
 
 // Run logs cmd and runs it on host, retrying DNS failures.
 func (o *OpenSSH) Run(host string, cmd Command, id string, out *Formatter) (Result, error) {
-	out.commandStart(cmd, host, id)
+	out.commandStart(cmd, host, "", id)
 	var result Result
 	err := o.DNS.Do(host, out, func() error {
 		var err error

@@ -62,8 +62,13 @@ func (f *Formatter) write(level Level, message, id string) {
 }
 
 // commandStart logs "Running <command> on <host>" and, at Debug, the full command.
-func (f *Formatter) commandStart(cmd Command, host, id string) {
-	message := "Running " + f.colorize(cmd.Redacted(), "yellow", true) + " on " + f.colorize(host, "blue", false)
+// A host with a user, as SSHKit's local host has, shows "as <user>@<host>".
+func (f *Formatter) commandStart(cmd Command, host, user, id string) {
+	where := "on " + f.colorize(host, "blue", false)
+	if user != "" {
+		where = "as " + f.colorize(user, "blue", false) + "@" + f.colorize(host, "blue", false)
+	}
+	message := "Running " + f.colorize(cmd.Redacted(), "yellow", true) + " " + where
 	f.write(cmd.Verbosity, message, id)
 	f.write(Debug, "Command: "+f.colorize(cmd.ToCommand(), "blue", false), id)
 }

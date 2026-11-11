@@ -77,7 +77,7 @@ func (r Registry) Login(registry *configuration.Registry) (Line, error) {
 	if err != nil {
 		return nil, err
 	}
-	return docker(w("login", registry.Server(), "-u"), sensitiveValue(user), w("-p"), sensitiveValue(password)), nil
+	return docker(w("login"), when(registry.Server() != "", registry.Server()), w("-u"), sensitiveValue(user), w("-p"), sensitiveValue(password)), nil
 }
 
 func sensitiveValue(value string) Line {
@@ -86,7 +86,8 @@ func sensitiveValue(value string) Line {
 
 // Logout returns docker logout of the registry.
 func (r Registry) Logout(registry *configuration.Registry) Line {
-	return docker(w("logout", r.orDefault(registry).Server()))
+	server := r.orDefault(registry).Server()
+	return docker(w("logout"), when(server != "", server))
 }
 
 // Setup starts or runs the local registry container.

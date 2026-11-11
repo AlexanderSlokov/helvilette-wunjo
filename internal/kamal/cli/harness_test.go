@@ -76,7 +76,7 @@ type world struct {
 	shell         map[string]localshell.Result
 	hosts         *fakeHosts
 	local         *fakeHosts
-	out     syncBuffer
+	out           syncBuffer
 	execs         []string
 	invokes       []string
 	recordInvokes bool
@@ -93,6 +93,7 @@ func newWorld(t *testing.T) *world {
 		}}
 	print := func(s string) { w.out.WriteString(s) }
 	w.hosts.printer.Print, w.local.printer.Print = print, print
+	w.local.printer.User = "deployer"
 	return w
 }
 
@@ -260,6 +261,8 @@ func assertMatches(t *testing.T, output, pattern string) {
 		t.Fatalf("output does not match %s:\n%s", pattern, output)
 	}
 }
+
+func regexpMatch(pattern, output string) bool { return regexp.MustCompile(pattern).MatchString(output) }
 
 // assertHookRan checks the hook ran count times, as assert_hook_ran does.
 func assertHookRan(t *testing.T, output, hook string, count int) {

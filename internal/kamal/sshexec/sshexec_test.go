@@ -45,6 +45,14 @@ func TestCommandRedaction(t *testing.T) {
 	}
 }
 
+func TestFormatterShowsTheUserOfLocalCommands(t *testing.T) {
+	var out bytes.Buffer
+	NewFormatter(&out, false).commandStart(cmdOf("docker", "logout"), LocalHost, "deployer", "1a2b3c4d")
+	if !strings.Contains(out.String(), "Running docker logout as deployer@localhost") {
+		t.Fatalf("got %q", out.String())
+	}
+}
+
 func TestFailedErrorMessage(t *testing.T) {
 	err := &FailedError{Name: "docker", ExitStatus: 1, Stderr: "boom\n"}
 	want := "docker exit status: 1\ndocker stdout: Nothing written\ndocker stderr: boom\n"
@@ -56,7 +64,7 @@ func TestFailedErrorMessage(t *testing.T) {
 func TestFormatterPrettyLines(t *testing.T) {
 	var out bytes.Buffer
 	f := NewFormatter(&out, false)
-	f.commandStart(cmdOf("docker", "ps"), "1.1.1.1", "1a2b3c4d")
+	f.commandStart(cmdOf("docker", "ps"), "1.1.1.1", "", "1a2b3c4d")
 	f.commandExit(cmdOf("docker", "ps"), 0, 1500*time.Millisecond, "1a2b3c4d")
 	f.Log(Debug, "hidden")
 	want := "  INFO [1a2b3c4d] Running docker ps on 1.1.1.1\n  INFO [1a2b3c4d] Finished in 1.500 seconds with exit status 0 (successful).\n"

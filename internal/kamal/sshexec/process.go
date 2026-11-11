@@ -89,13 +89,15 @@ func runLogged(runner ProcessRunner, p Process, id string, out *Formatter) (Resu
 }
 
 // Local runs commands on this machine with /bin/sh, as SSHKit's local backend does.
+// User is the operator's login, which SSHKit shows as "as <user>@localhost".
 type Local struct {
 	Processes ProcessRunner
+	User      string
 }
 
 // Run logs and runs cmd through /bin/sh -c.
 func (l Local) Run(host string, cmd Command, id string, out *Formatter) (Result, error) {
-	out.commandStart(cmd, host, id)
+	out.commandStart(cmd, host, l.User, id)
 	return runLogged(l.Processes, Process{Name: "/bin/sh", Args: []string{"-c", cmd.ToCommand()}, Env: cmd.ProcessEnv, Dir: cmd.Dir}, id, out)
 }
 

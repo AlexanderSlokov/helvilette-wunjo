@@ -6,8 +6,8 @@ package configuration
 
 import (
 	"io"
-	"sync"
 	"os"
+	"sync"
 
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/git"
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/localshell"

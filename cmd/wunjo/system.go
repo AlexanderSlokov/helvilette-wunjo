@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"strconv"
 	"syscall"
@@ -74,7 +75,7 @@ func (s *system) commandRuntime() commands.Runtime {
 func (s *system) runtime() cli.Runtime {
 	return cli.Runtime{
 		Stdout: os.Stdout, Stderr: os.Stderr, Stdin: os.Stdin, StdoutTTY: isTerminal(os.Stdout),
-		Remote: s.remote, Local: sshexec.Local{Processes: sshexec.OSProcesses{}}, Exec: execShell, Forward: s.forward,
+		Remote: s.remote, Local: sshexec.Local{Processes: sshexec.OSProcesses{}, User: currentUser()}, Exec: execShell, Forward: s.forward,
 		Sleep: time.Sleep, Now: time.Now, RandomHex: randomHex, Files: osFiles{},
 		Getenv: func(name string) (string, bool) {
 			if name == "PWD" {
@@ -132,6 +133,14 @@ func forwardArgs(opts sshexec.Options) []string {
 // interactive sessions.
 func execShell(command string) error {
 	return syscall.Exec("/bin/sh", []string{"sh", "-c", command}, os.Environ())
+}
+
+// currentUser returns the login that SSHKit shows for local commands.
+func currentUser() string {
+	if u, err := user.Current(); err == nil {
+		return u.Username
+	}
+	return os.Getenv("USER")
 }
 
 func randomHex(n int) string {
