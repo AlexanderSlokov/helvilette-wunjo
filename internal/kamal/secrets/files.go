@@ -23,14 +23,3 @@ func (f OSFiles) Read(path string) ([]byte, bool, error) {
 	}
 	return content, err == nil, err
 }
-
-// FakeFiles holds secrets files in memory for tests, keyed by path.
-//
-//	files := secrets.FakeFiles{".kamal/secrets": "SECRET=ABC"}
-type FakeFiles map[string]string
-
-// Read returns the stored content of path.
-func (f FakeFiles) Read(path string) ([]byte, bool, error) {
-	content, ok := f[path]
-	return []byte(content), ok, nil
-}

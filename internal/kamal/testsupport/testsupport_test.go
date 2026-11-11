@@ -24,3 +24,13 @@ func TestFakeEnvLookup(t *testing.T) {
 		t.Fatal("unset variable found")
 	}
 }
+
+func TestFakeFiles(t *testing.T) {
+	files := FakeFiles{"a": "x"}
+	if content, ok, _ := files.Read("a"); !ok || string(content) != "x" || !files.Exists("a") || files.Exists("b") {
+		t.Fatal("FakeFiles lookups are wrong")
+	}
+	if _, err := files.ReadFile("b"); err == nil {
+		t.Fatal("ReadFile of a missing file did not fail")
+	}
+}

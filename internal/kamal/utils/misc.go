@@ -130,3 +130,13 @@ func compareSegments(a, b versionSegment) int {
 		return a.number - b.number
 	}
 }
+
+// Contains reports whether list holds item.
+func Contains(list []string, item string) bool {
+	for _, s := range list {
+		if s == item {
+			return true
+		}
+	}
+	return false
+}
