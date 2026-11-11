@@ -20,3 +20,7 @@ All notable changes to Helvilette Wunjo are listed here. The format follows
 - **Deploy files keep their key order and follow YAML 1.1, as in Kamal.** Wunjo reads
   `yes` and `on` as true, `3000:30` as a base-60 integer, and `:quiet` as a symbol,
   so `--env` and `--label` flags come out in the order of the file.
+- **Wunjo reads `.kamal/secrets` files as Kamal does.** The common file, the
+  destination file, `$(command)` substitution, `$VAR` references, and in-process
+  `kamal secrets` commands follow Kamal 2.12.0 with dotenv 3.2.0, and each command
+  runs once per deploy.

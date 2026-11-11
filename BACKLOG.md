@@ -13,8 +13,7 @@ The following tasks port the configuration loader and the secret files:
 
 | ID | Task | Files | Depends on | Done when |
 |---|---|---|---|---|
-| WJ-021 | Port the secret file loader, inline command substitution, `env_file.rb`, `git.rb`, `tags.rb`, and `utils/`. | `internal/kamal/secrets/`, `internal/kamal/envfile/`, `internal/kamal/utils/` | None | The ported `test/secrets_test.rb`, `test/secrets/dotenv_inline_command_substitution_test.rb`, `test/env_file_test.rb`, `test/git_test.rb`, and `test/utils_test.rb` pass. |
-| WJ-022 | Port `configuration.rb`, `configuration/`, and the validators. | `internal/kamal/configuration/` | WJ-021 | The ported `test/configuration_test.rb` and `test/configuration/` pass, including the validation error messages. |
+| WJ-022 | Port `configuration.rb`, `configuration/`, and the validators. | `internal/kamal/configuration/` | None | The ported `test/configuration_test.rb` and `test/configuration/` pass, including the validation error messages. |
 
 ## Command builders
 
