@@ -90,6 +90,7 @@ type world struct {
 	hosts         *fakeHosts
 	local         *fakeHosts
 	out           syncBuffer
+	errOut        syncBuffer
 	execs         []string
 	invokes       []string
 	recordInvokes bool
@@ -171,7 +172,7 @@ func (w *world) newCLI() *CLI {
 var recordedAt = time.Date(2026, 11, 11, 10, 30, 0, 0, time.UTC)
 
 func (w *world) runtime() Runtime {
-	return Runtime{Stdout: &w.out, Stderr: &w.out, Stdin: strings.NewReader(""),
+	return Runtime{Stdout: &w.out, Stderr: &w.errOut, Stdin: strings.NewReader(""),
 		Remote: func(*configuration.Configuration) sshexec.Backend { return w.hosts }, Local: w.local,
 		Exec:    func(command string) error { w.execs = append(w.execs, command); return nil },
 		Forward: func([]string, int, sshexec.Options) (func(), error) { return func() {}, nil },

@@ -3,6 +3,7 @@ package cli
 // Ports lib/kamal/cli/accessory.rb at Kamal 2.12.0.
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 	"sync"
@@ -58,8 +59,7 @@ func (c *CLI) errorOnMissingAccessory(name string) error {
 	if names := c.kamal.AccessoryNames(); len(names) > 0 {
 		message += " (options: " + toSentence(names) + ")"
 	}
-	c.syncVerbosity()
-	c.out.Log(sshexec.Error, message)
+	fmt.Fprintln(c.rt.Stderr, message)
 	return nil
 }
 
