@@ -67,6 +67,18 @@ func TestIntFlagDefaultAndChanged(t *testing.T) {
 	}
 }
 
+func TestStringListFlagRepeats(t *testing.T) {
+	rec := &recordingRun{}
+	tree := &Command{Name: "wunjo", Children: []*Command{{Name: "exec", Flags: []Flag{{Name: "env", Short: "e", Kind: StringListFlag}}, Run: rec.run}}}
+	var out bytes.Buffer
+	if err := Execute(tree, []string{"exec", "-e", "A:1", "--env", "B:2"}, &out, &out); err != nil {
+		t.Fatal(err)
+	}
+	if got := rec.got.Strings("env"); len(got) != 2 || got[0] != "A:1" || got[1] != "B:2" {
+		t.Fatalf("env = %v", got)
+	}
+}
+
 func TestCommandWithoutArgsRejectsArgs(t *testing.T) {
 	_, err := execute(t, &recordingRun{}, "deploy", "extra")
 	if err == nil {

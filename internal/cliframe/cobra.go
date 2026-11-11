@@ -79,6 +79,8 @@ func addFlag(set *pflag.FlagSet, flag Flag) {
 	case IntFlag:
 		value, _ := strconv.Atoi(flag.Default)
 		set.IntP(flag.Name, flag.Short, value, flag.Usage)
+	case StringListFlag:
+		set.StringArrayP(flag.Name, flag.Short, nil, flag.Usage)
 	default:
 		set.StringP(flag.Name, flag.Short, flag.Default, flag.Usage)
 	}
@@ -102,6 +104,12 @@ func (r pflagReader) stringValue(name string) string {
 
 func (r pflagReader) intValue(name string) int {
 	value, err := r.set.GetInt(name)
+	mustDeclare(name, err)
+	return value
+}
+
+func (r pflagReader) stringsValue(name string) []string {
+	value, err := r.set.GetStringArray(name)
 	mustDeclare(name, err)
 	return value
 }

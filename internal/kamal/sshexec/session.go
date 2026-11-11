@@ -16,6 +16,9 @@ type Result struct {
 	Stderr     string
 	ExitStatus int
 	Runtime    time.Duration
+	// Completed reports that the command ran to an exit status. The printer of the
+	// tests never runs commands, so their results are not completed.
+	Completed bool
 }
 
 // Backend runs commands for a Session: over SSH, locally, or only printing them.
@@ -46,6 +49,8 @@ type Session struct {
 	out     *Formatter
 	newID   func() string
 	env     []EnvVar
+	// ProcessEnv adds variables to the environment of local commands.
+	ProcessEnv []EnvVar
 }
 
 // NewSession returns a session on host. newID returns the 8-character ID that
@@ -60,6 +65,14 @@ func (s *Session) Execute(cmd Command) error {
 	return err
 }
 
+// ExecuteOK runs cmd without failing and reports whether it completed with status
+// 0, as execute(..., raise_on_non_zero_exit: false) returns success?.
+func (s *Session) ExecuteOK(cmd Command) (bool, error) {
+	cmd.RaiseOnNonZeroExit = false
+	result, err := s.run(cmd)
+	return err == nil && result.Completed && result.ExitStatus == 0, err
+}
+
 // Capture runs cmd at Debug and returns its stripped output, as capture does.
 func (s *Session) Capture(cmd Command) (string, error) {
 	cmd.Verbosity = Debug
@@ -71,6 +84,16 @@ func (s *Session) Capture(cmd Command) (string, error) {
 func (s *Session) CaptureWithInfo(cmd Command) (string, error) {
 	cmd.Verbosity = Info
 	result, err := s.run(cmd)
+	return strings.TrimSpace(result.Stdout), err
+}
+
+// CaptureWithInfoRaw runs cmd at Info and returns its output, stripped unless raw.
+func (s *Session) CaptureWithInfoRaw(cmd Command, raw bool) (string, error) {
+	cmd.Verbosity = Info
+	result, err := s.run(cmd)
+	if raw {
+		return result.Stdout, err
+	}
 	return strings.TrimSpace(result.Stdout), err
 }
 
@@ -115,6 +138,7 @@ func (s *Session) Log(level Level, message string) { s.out.Log(level, message) }
 // run runs cmd, raising SSHKit's Failed error before the exit line is logged.
 func (s *Session) run(cmd Command) (Result, error) {
 	cmd.Env = append(append([]EnvVar{}, s.env...), cmd.Env...)
+	cmd.ProcessEnv = append(append([]EnvVar{}, s.ProcessEnv...), cmd.ProcessEnv...)
 	id := s.newID()
 	result, err := s.backend.Run(s.Host, cmd, id, s.out)
 	if err != nil {

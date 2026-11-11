@@ -15,6 +15,8 @@ const (
 	StringFlag
 	// IntFlag takes one integer value, such as --lines=100.
 	IntFlag
+	// StringListFlag takes a value each time it appears, such as -e A:1 -e B:2.
+	StringListFlag
 )
 
 // Flag describes one command-line option.
@@ -64,6 +66,7 @@ type flagReader interface {
 	boolValue(name string) bool
 	stringValue(name string) string
 	intValue(name string) int
+	stringsValue(name string) []string
 	changed(name string) bool
 }
 
@@ -75,6 +78,9 @@ func (inv *Invocation) String(name string) string { return inv.flags.stringValue
 
 // Int returns the value of an IntFlag, for example inv.Int("lines").
 func (inv *Invocation) Int(name string) int { return inv.flags.intValue(name) }
+
+// Strings returns the values of a StringListFlag, for example inv.Strings("env").
+func (inv *Invocation) Strings(name string) []string { return inv.flags.stringsValue(name) }
 
 // Changed reports whether the user set the flag, for example inv.Changed("hosts").
 func (inv *Invocation) Changed(name string) bool { return inv.flags.changed(name) }

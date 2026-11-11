@@ -1,18 +1,21 @@
 package main
 
 import (
-	"bytes"
+	"os"
+	"strings"
 	"testing"
-
-	"github.com/AlexanderSlokov/helvilette-wunjo/internal/cliframe"
 )
 
-func TestVersionPrintsRelease(t *testing.T) {
-	var out bytes.Buffer
-	if err := cliframe.Execute(rootCommand(), []string{"version"}, &out, &out); err != nil {
-		t.Fatal(err)
-	}
-	if out.String() != "0.1.0\n" {
-		t.Fatalf("version printed %q, want %q", out.String(), "0.1.0\n")
+func TestRunPrintsVersion(t *testing.T) {
+	r, w, _ := os.Pipe()
+	stdout := os.Stdout
+	os.Stdout = w
+	status := run([]string{"version"})
+	os.Stdout = stdout
+	w.Close()
+	buf := make([]byte, 64)
+	n, _ := r.Read(buf)
+	if status != 0 || strings.TrimSpace(string(buf[:n])) != "0.1.0" {
+		t.Fatalf("status %d output %q", status, buf[:n])
 	}
 }

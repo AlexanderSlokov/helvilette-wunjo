@@ -123,3 +123,15 @@ func TestExceptAndDelete(t *testing.T) {
 		t.Fatalf("except = %s, original len %d", got, m.Len())
 	}
 }
+
+func TestDumpWithSymbolKeysRoundTrips(t *testing.T) {
+	doc := mustParse(t, "roles: [web]\nversion: \"999\"\nlogging: [\"--log-opt\", 'max-size=\"10m\"']\nsshkit: {}\nssh:\n  port: 22\n  log_level: :fatal\n")
+	text := DumpWithSymbolKeys(doc)
+	if !strings.HasPrefix(text, "---\n:roles:\n- web\n:version: '999'\n") {
+		t.Fatalf("dump =\n%s", text)
+	}
+	back := mustParse(t, text)
+	if !Equal(back, doc) {
+		t.Fatalf("round trip lost data:\n%s\n%s", text, back.Inspect())
+	}
+}

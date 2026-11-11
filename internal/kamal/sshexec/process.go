@@ -3,6 +3,7 @@ package sshexec
 import (
 	"errors"
 	"io"
+	"os"
 	"os/exec"
 	"strings"
 	"sync"
@@ -16,6 +17,10 @@ type Process struct {
 	Stdin  io.Reader
 	Stdout io.Writer
 	Stderr io.Writer
+	// Env adds variables to the inherited environment.
+	Env []EnvVar
+	// Dir is the working directory, or the current one when empty.
+	Dir string
 }
 
 // ProcessRunner starts programs. Tests pass a fake that records them.
@@ -31,6 +36,13 @@ type OSProcesses struct{}
 func (OSProcesses) RunProcess(p Process) (int, error) {
 	cmd := exec.Command(p.Name, p.Args...)
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = p.Stdin, p.Stdout, p.Stderr
+	cmd.Dir = p.Dir
+	if len(p.Env) > 0 {
+		cmd.Env = os.Environ()
+		for _, v := range p.Env {
+			cmd.Env = append(cmd.Env, v.Key+"="+v.Value)
+		}
+	}
 	err := cmd.Run()
 	var exit *exec.ExitError
 	if errors.As(err, &exit) {
@@ -73,7 +85,7 @@ func runLogged(runner ProcessRunner, p Process, id string, out *Formatter) (Resu
 	p.Stdout, p.Stderr = stdout, stderr
 	started := time.Now()
 	status, err := runner.RunProcess(p)
-	return Result{Stdout: stdout.String(), Stderr: stderr.String(), ExitStatus: status, Runtime: time.Since(started)}, err
+	return Result{Stdout: stdout.String(), Stderr: stderr.String(), ExitStatus: status, Runtime: time.Since(started), Completed: err == nil}, err
 }
 
 // Local runs commands on this machine with /bin/sh, as SSHKit's local backend does.
@@ -84,7 +96,7 @@ type Local struct {
 // Run logs and runs cmd through /bin/sh -c.
 func (l Local) Run(host string, cmd Command, id string, out *Formatter) (Result, error) {
 	out.commandStart(cmd, host, id)
-	return runLogged(l.Processes, Process{Name: "/bin/sh", Args: []string{"-c", cmd.ToCommand()}}, id, out)
+	return runLogged(l.Processes, Process{Name: "/bin/sh", Args: []string{"-c", cmd.ToCommand()}, Env: cmd.ProcessEnv, Dir: cmd.Dir}, id, out)
 }
 
 // Upload writes the content to remote on this machine.

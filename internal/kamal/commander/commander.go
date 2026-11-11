@@ -6,6 +6,7 @@ import (
 
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/commands"
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/configuration"
+	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/git"
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/sshexec"
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/tags"
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/utils"
@@ -33,6 +34,8 @@ type Commander struct {
 	LockWaitTimeout  int
 	LockWaitInterval int
 
+	envLock bool
+
 	specificRoles []*configuration.Role
 	specificHosts []string
 	specifics     *Specifics
@@ -42,7 +45,7 @@ type Commander struct {
 // and builds commands with runtime. holdingLock is $KAMAL_LOCK == "true", set when
 // a parent kamal already holds the lock.
 func New(env configuration.Environment, runtime commands.Runtime, holdingLock bool) *Commander {
-	return &Commander{env: env, runtime: runtime, Verbosity: sshexec.Info, HoldingLock: holdingLock,
+	return &Commander{env: env, runtime: runtime, Verbosity: sshexec.Info, HoldingLock: holdingLock, envLock: holdingLock,
 		LockWaitTimeout: 900, LockWaitInterval: 15}
 }
 
@@ -72,12 +75,29 @@ func (c *Commander) Config() (*configuration.Configuration, error) {
 	return cfg, nil
 }
 
-// MustConfig returns the loaded configuration. Call it only after Config succeeded.
+// LoadError wraps a configuration that failed to load inside MustConfig. Kamal
+// raises it from wherever the configuration is first used, so MustConfig panics with
+// it and the command-line layer recovers it.
+type LoadError struct{ Err error }
+
+func (e *LoadError) Error() string { return e.Err.Error() }
+
+func (e *LoadError) Unwrap() error { return e.Err }
+
+// MustConfig returns the configuration, loading it on first use, and panics with a
+// *LoadError when it does not load.
 func (c *Commander) MustConfig() *configuration.Configuration {
-	if c.cfg == nil {
-		panic("commander: configuration is not loaded")
+	cfg, err := c.Config()
+	if err != nil {
+		panic(&LoadError{Err: err})
 	}
-	return c.cfg
+	return cfg
+}
+
+// Reset forgets the configuration and the selection, as KAMAL.reset does before an
+// alias runs its command.
+func (c *Commander) Reset() {
+	*c = *New(c.env, c.runtime, c.envLock)
 }
 
 // SetSpecificRoles selects the roles that match the patterns, such as "web*".
@@ -251,6 +271,9 @@ func (c *Commander) resolveRawAlias(name string) (string, bool, error) {
 	command, ok := raw.At("aliases").Map().Get(name)
 	return command.ToS(), ok, nil
 }
+
+// Git returns the local Git checkout reader.
+func (c *Commander) Git() git.Git { return c.runtime.Git }
 
 // WithVerbosity runs fn at level and restores the previous level.
 func (c *Commander) WithVerbosity(level sshexec.Level, fn func() error) error {

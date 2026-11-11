@@ -42,6 +42,12 @@ type Command struct {
 	Env                []EnvVar
 	Verbosity          Level
 	RaiseOnNonZeroExit bool
+	// ProcessEnv adds variables to the environment of a local command, as Kamal's
+	// with_env does for hooks and build secrets. Remote commands ignore it.
+	ProcessEnv []EnvVar
+	// Dir runs a local command in this directory, as Kamal's Dir.chdir does around
+	// the build. Remote commands ignore it.
+	Dir string
 }
 
 // NewCommand returns a command that logs at Info and fails on a non-zero exit, as
@@ -121,9 +127,14 @@ type FailedError struct {
 	ExitStatus int
 	Stdout     string
 	Stderr     string
+	// Message replaces the computed message, as SSHKit::Command::Failed.new(message).
+	Message string
 }
 
 func (e *FailedError) Error() string {
+	if e.Message != "" {
+		return e.Message
+	}
 	return fmt.Sprintf("%s exit status: %d\n%s stdout: %s\n%s stderr: %s\n",
 		e.Name, e.ExitStatus, e.Name, orNothing(e.Stdout), e.Name, orNothing(e.Stderr))
 }
