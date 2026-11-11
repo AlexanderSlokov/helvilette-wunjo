@@ -29,6 +29,11 @@ func newEnv(config *yamlord.Value, sec *secrets.Secrets, context string) (*Env, 
 	if err := validateEnv(config, example("env"), context); err != nil {
 		return nil, err
 	}
+	return buildEnv(config, sec, context), nil
+}
+
+// buildEnv builds an Env from a config that validateEnv accepted.
+func buildEnv(config *yamlord.Value, sec *secrets.Secrets, context string) *Env {
 	m := config.Map()
 	clear := m
 	if m.Has("secret") || m.Has("tags") {
@@ -37,7 +42,7 @@ func newEnv(config *yamlord.Value, sec *secrets.Secrets, context string) (*Env, 
 	if m.Has("clear") {
 		clear = m.At("clear").Map()
 	}
-	return &Env{clear: clear, secretKeys: m.At("secret").StringList(), secrets: sec, context: context}, nil
+	return &Env{clear: clear, secretKeys: m.At("secret").StringList(), secrets: sec, context: context}
 }
 
 // Clear returns the clear variables in file order.
@@ -124,5 +129,5 @@ type EnvTag struct {
 	sec    *secrets.Secrets
 }
 
-// Env returns the tag's variables.
-func (t *EnvTag) Env() (*Env, error) { return newEnv(t.config, t.sec, "env") }
+// Env returns the tag's variables. The root env validated every tag on load.
+func (t *EnvTag) Env() *Env { return buildEnv(t.config, t.sec, "env") }

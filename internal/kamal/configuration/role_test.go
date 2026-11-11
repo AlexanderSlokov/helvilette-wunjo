@@ -34,14 +34,6 @@ func withRolesConfig(t *testing.T, w *fakeWorld, overrides ...string) *Configura
 	return mustBuild(t, w, deepMerged(t, roleDeployWithRoles, overrides...))
 }
 
-func lineOf(t *testing.T, line interface{ String() string }, err error) string {
-	t.Helper()
-	if err != nil {
-		t.Fatal(err)
-	}
-	return line.String()
-}
-
 func TestRoleHosts(t *testing.T) {
 	if got := joined(mustBuild(t, newWorld(), parseYAML(t, roleDeploy)).Role("web").Hosts()); got != "1.1.1.1 1.1.1.2" {
 		t.Fatalf("hosts = %s", got)
@@ -54,9 +46,9 @@ func TestRoleHosts(t *testing.T) {
 func TestMissingEnvTagIsIgnored(t *testing.T) {
 	raw := deepMerged(t, roleDeployWithRoles)
 	raw.At("servers").Map().At("workers").Map().Set("hosts", parseYAML(t, "h: [{1.1.1.3: [job]}]").At("h"))
-	env, err := mustBuild(t, newWorld(), raw).Role("workers").Env("1.1.1.3")
-	if err != nil || env.Clear().At("REDIS_URL").ToS() != "redis://a/b" {
-		t.Fatalf("env = %v, %v", env, err)
+	env := mustBuild(t, newWorld(), raw).Role("workers").Env("1.1.1.3")
+	if env.Clear().At("REDIS_URL").ToS() != "redis://a/b" {
+		t.Fatalf("env = %v", env)
 	}
 }
 
@@ -99,8 +91,7 @@ func TestDefaultProxyLabelOnNonWebRole(t *testing.T) {
 func assertWorkerEnv(t *testing.T, cfg *Configuration, wantArgs, wantSecrets string) {
 	t.Helper()
 	role := cfg.Role("workers")
-	args, err := role.EnvArgs("1.1.1.3")
-	if got := lineOf(t, args, err); got != wantArgs {
+	if got := role.EnvArgs("1.1.1.3").String(); got != wantArgs {
 		t.Fatalf("env args = %s\nwant       %s", got, wantArgs)
 	}
 	secretsFile, err := role.SecretsFile("1.1.1.3")
@@ -113,7 +104,7 @@ const workerArgs = `--env REDIS_URL="redis://a/b" --env WEB_CONCURRENCY="4" --en
 
 func TestEnvOverwrittenByRole(t *testing.T) {
 	cfg := withRolesConfig(t, newWorld())
-	env, _ := cfg.Role("workers").Env("1.1.1.3")
+	env := cfg.Role("workers").Env("1.1.1.3")
 	if env.Clear().At("REDIS_URL").ToS() != "redis://a/b" {
 		t.Fatal("role env did not override")
 	}

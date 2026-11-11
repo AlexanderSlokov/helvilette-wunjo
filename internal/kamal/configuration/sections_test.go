@@ -105,11 +105,7 @@ func tagNames(cfg *Configuration) string {
 
 func tagClear(t *testing.T, cfg *Configuration, name string) string {
 	t.Helper()
-	env, err := cfg.EnvTag(name).Env()
-	if err != nil {
-		t.Fatal(err)
-	}
-	return yamlord.NewMap(env.Clear()).Inspect()
+	return yamlord.NewMap(cfg.EnvTag(name).Env().Clear()).Inspect()
 }
 
 func TestEnvTags(t *testing.T) {
@@ -136,11 +132,7 @@ env:
 
 func hostEnv(t *testing.T, cfg *Configuration, host string) *Env {
 	t.Helper()
-	env, err := cfg.Role("web").Env(host)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return env
+	return cfg.Role("web").Env(host)
 }
 
 func TestTagOverridesEnv(t *testing.T) {
@@ -298,7 +290,7 @@ func TestSSHOptions(t *testing.T) {
 	if sshOf(t, newWorld(), "{user: app}").LoggerLevel() != 4 || sshOf(t, newWorld(), "{log_level: debug}").LoggerLevel() != 0 {
 		t.Fatal("wrong logger level")
 	}
-	if sshOf(t, newWorld(), "{port: 2222}").Port() != 2222 {
+	if sshOf(t, newWorld(), "{port: 2222}").Port() != "2222" {
 		t.Fatal("wrong ssh port")
 	}
 	configs := map[string]string{"true": "true", "false": "false", "'~/config.mine'": `"~/config.mine"`, "['~/config.mine.1', '~/config.mine.2']": `["~/config.mine.1", "~/config.mine.2"]`}

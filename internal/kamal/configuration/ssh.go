@@ -37,8 +37,10 @@ func newSSH(config *yamlord.Value, sec *secrets.Secrets, stderr io.Writer) (*SSH
 // User returns the SSH user, default root.
 func (s *SSH) User() string { return s.config.Fetch("user", yamlord.NewString("root")).ToS() }
 
-// Port returns the SSH port, default 22.
-func (s *SSH) Port() int64 { return s.config.Fetch("port", yamlord.NewInt(22)).Int() }
+// Port returns the SSH port as written, default 22. Kamal accepts "2222" and 2222.
+func (s *SSH) Port() string { return s.portValue().ToS() }
+
+func (s *SSH) portValue() *yamlord.Value { return s.config.Fetch("port", yamlord.NewInt(22)) }
 
 // Proxy returns the jump host or proxy command, and false when neither is set. A jump
 // host without a user connects as root.
@@ -112,7 +114,7 @@ func (s *SSH) LoggerLevel() int {
 func (s *SSH) ToH() (*yamlord.Ordered, error) {
 	out := yamlord.OrderedOf(
 		yamlord.Pair{Key: "user", Value: yamlord.NewString(s.User())},
-		yamlord.Pair{Key: "port", Value: yamlord.NewInt(s.Port())},
+		yamlord.Pair{Key: "port", Value: s.portValue()},
 	)
 	if proxy, ok := s.Proxy(); ok {
 		out.Set("proxy", yamlord.NewString(proxy.Jump+proxy.Command))

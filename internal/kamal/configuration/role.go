@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/kamalerr"
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/shell"
@@ -24,6 +25,7 @@ type Role struct {
 	runningProxy       bool
 	proxy              *Proxy
 	envs               map[string]*Env
+	envsMu             sync.Mutex
 }
 
 func newRole(name string, cfg *Configuration) (*Role, error) {
@@ -175,42 +177,30 @@ func (r *Role) StopTimeout() *yamlord.Value {
 }
 
 // Env returns the variables for host: root env, role env, then the host's env tags.
-func (r *Role) Env(host string) (*Env, error) {
+func (r *Role) Env(host string) *Env {
+	r.envsMu.Lock()
+	defer r.envsMu.Unlock()
 	if env, ok := r.envs[host]; ok {
-		return env, nil
+		return env
 	}
 	env := r.cfg.Env().Merge(r.specializedEnv)
 	for _, tag := range r.EnvTags(host) {
-		tagEnv, err := tag.Env()
-		if err != nil {
-			return nil, err
-		}
-		env = env.Merge(tagEnv)
+		env = env.Merge(tag.Env())
 	}
 	r.envs[host] = env
-	return env, nil
+	return env
 }
 
 // EnvArgs returns --env flags and --env-file <secrets path> for host.
-func (r *Role) EnvArgs(host string) (shell.Line, error) {
-	env, err := r.Env(host)
-	if err != nil {
-		return nil, err
-	}
-	return shell.Concat(env.ClearArgs(), utils.Argumentize("--env-file", utils.Keys(r.SecretsPath()), false)), nil
+func (r *Role) EnvArgs(host string) shell.Line {
+	return shell.Concat(r.Env(host).ClearArgs(), utils.Argumentize("--env-file", utils.Keys(r.SecretsPath()), false))
 }
 
 // EnvDirectory returns .kamal/apps/<service>/env/roles.
 func (r *Role) EnvDirectory() string { return filepath.Join(r.cfg.EnvDirectory(), "roles") }
 
 // SecretsFile returns the env file of the host's secrets.
-func (r *Role) SecretsFile(host string) (string, error) {
-	env, err := r.Env(host)
-	if err != nil {
-		return "", err
-	}
-	return env.SecretsFile()
-}
+func (r *Role) SecretsFile(host string) (string, error) { return r.Env(host).SecretsFile() }
 
 // SecretsPath returns .kamal/apps/<service>/env/roles/<role>.env.
 func (r *Role) SecretsPath() string { return filepath.Join(r.EnvDirectory(), r.name+".env") }
