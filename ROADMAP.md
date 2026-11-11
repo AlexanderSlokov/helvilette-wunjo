@@ -25,7 +25,10 @@ Wunjo will behave like Kamal 2.12.0, command for command, as a single Go binary.
 - Keep Kamal's MIT notice in `NOTICE`.
 - Port three of Kamal's nine secret adapters: AWS Secrets Manager, GCP Secret Manager,
   and Doppler.
-- Finish when the author deploys a real service from an unchanged `config/deploy.yml`.
+- Finish with a deploy that the author accepts. On 2026-11-12 the author accepted a
+  deploy of [tmeire/minimal-kamal](https://github.com/tmeire/minimal-kamal) to the
+  test stack in `test/integration/`, in place of a deploy of the author's own service.
+- Release 0.1.0 with a tutorial, an install guide, and binaries for Linux and macOS.
 
 ## Phase 2: Wunjo extensions (target 0.2.0)
 
