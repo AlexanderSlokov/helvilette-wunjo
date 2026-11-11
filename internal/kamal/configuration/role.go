@@ -246,6 +246,12 @@ func (r *Role) AssetPath() string {
 	return path
 }
 
+// AssetPathOptions returns the mount options after the colon of asset_path, or "".
+func (r *Role) AssetPathOptions() string {
+	_, options := r.assetPathConfig()
+	return options
+}
+
 // Assets reports whether the role shares assets between releases.
 func (r *Role) Assets() bool { return strings.TrimSpace(r.AssetPath()) != "" && r.runningProxy }
 

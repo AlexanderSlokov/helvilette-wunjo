@@ -96,6 +96,11 @@ func validateEnv(config, example *yamlord.Value, context string) error {
 	if countKeys(m, envSpecialKeys...) == 0 {
 		return v.hashOf(config, classString)
 	}
+	return v.complexEnv(m, example)
+}
+
+// complexEnv checks an env written with clear, secret, and tags keys.
+func (v validator) complexEnv(m *yamlord.Ordered, example *yamlord.Value) error {
 	if err := v.unknownKeysError(keysExcept(m, envSpecialKeys)); err != nil {
 		return err
 	}

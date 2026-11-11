@@ -18,10 +18,7 @@ func (c *Configuration) ToH() (*yamlord.Ordered, error) {
 	if host := c.PrimaryHost(); host != "" {
 		out.Set("primary_host", yamlord.NewString(host))
 	}
-	out.Set("version", yamlord.NewString(c.Version()))
-	out.Set("repository", yamlord.NewString(c.Repository()))
-	out.Set("absolute_image", yamlord.NewString(c.AbsoluteImage()))
-	out.Set("service_with_version", yamlord.NewString(c.ServiceWithVersion()))
+	c.setImageFields(out)
 	out.Set("volume_args", yamlord.Strings(c.VolumeArgs()...))
 	out.Set("ssh_options", yamlord.NewMap(ssh))
 	out.Set("sshkit", yamlord.NewMap(c.sshkit.ToH()))
@@ -29,4 +26,11 @@ func (c *Configuration) ToH() (*yamlord.Ordered, error) {
 	setIfPresent(out, "accessories", c.raw.At("accessories"))
 	out.Set("logging", yamlord.Strings(c.LoggingArgs()...))
 	return out, nil
+}
+
+func (c *Configuration) setImageFields(out *yamlord.Ordered) {
+	out.Set("version", yamlord.NewString(c.Version()))
+	out.Set("repository", yamlord.NewString(c.Repository()))
+	out.Set("absolute_image", yamlord.NewString(c.AbsoluteImage()))
+	out.Set("service_with_version", yamlord.NewString(c.ServiceWithVersion()))
 }

@@ -30,27 +30,17 @@ const (
 	classDate    rubyClass = "Date"
 )
 
+var classOfKind = map[yamlord.Kind]rubyClass{
+	yamlord.String: classString, yamlord.Symbol: classSymbol, yamlord.Int: classInteger,
+	yamlord.Float: classFloat, yamlord.List: classArray, yamlord.Map: classHash,
+	yamlord.Date: classDate, yamlord.Null: classNil,
+}
+
 func classOf(v *yamlord.Value) rubyClass {
-	switch v.Kind() {
-	case yamlord.String:
-		return classString
-	case yamlord.Symbol:
-		return classSymbol
-	case yamlord.Int:
-		return classInteger
-	case yamlord.Float:
-		return classFloat
-	case yamlord.Bool:
+	if v.Kind() == yamlord.Bool {
 		return booleanClass(v)
-	case yamlord.List:
-		return classArray
-	case yamlord.Map:
-		return classHash
-	case yamlord.Date:
-		return classDate
-	default:
-		return classNil
 	}
+	return classOfKind[v.Kind()]
 }
 
 func booleanClass(v *yamlord.Value) rubyClass {

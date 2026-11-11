@@ -24,3 +24,7 @@ All notable changes to Helvilette Wunjo are listed here. The format follows
   destination file, `$(command)` substitution, `$VAR` references, and in-process
   `kamal secrets` commands follow Kamal 2.12.0 with dotenv 3.2.0, and each command
   runs once per deploy.
+- **Wunjo reads and validates `config/deploy.yml` as Kamal 2.12.0 does.** Roles,
+  accessories, env tags, proxy, builder, SSH, and destination files load in Kamal's
+  order, and an invalid file fails with Kamal's error message, such as
+  `servers/web/hosts: should be an array`.

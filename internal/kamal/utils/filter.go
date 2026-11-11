@@ -91,33 +91,43 @@ func splitTopLevel(body string) []string {
 // globMatch matches *, ?, [...], and \ escapes. atStart tracks the leading-dot rule.
 func globMatch(pattern, text string, atStart bool) bool {
 	for pattern != "" {
-		if atStart && strings.HasPrefix(text, ".") && pattern[0] != '.' && pattern[0] != '\\' {
+		if atStart && hiddenStart(pattern, text) {
 			return false
 		}
-		switch pattern[0] {
-		case '*':
+		if pattern[0] == '*' {
 			return starMatch(pattern[1:], text)
-		case '?':
-			if text == "" {
-				return false
-			}
-			pattern, text = pattern[1:], text[1:]
-		case '[':
-			rest, ok := classMatch(pattern, text)
-			if !ok {
-				return false
-			}
-			pattern, text = rest, text[1:]
-		default:
-			var ok bool
-			pattern, text, ok = literalMatch(pattern, text)
-			if !ok {
-				return false
-			}
+		}
+		var ok bool
+		if pattern, text, ok = globStep(pattern, text); !ok {
+			return false
 		}
 		atStart = false
 	}
 	return text == ""
+}
+
+// hiddenStart reports a leading dot in text that the pattern does not spell out.
+func hiddenStart(pattern, text string) bool {
+	return strings.HasPrefix(text, ".") && pattern[0] != '.' && pattern[0] != '\\'
+}
+
+// globStep matches one ?, [...], or literal character.
+func globStep(pattern, text string) (string, string, bool) {
+	switch pattern[0] {
+	case '?':
+		if text == "" {
+			return pattern, text, false
+		}
+		return pattern[1:], text[1:], true
+	case '[':
+		rest, ok := classMatch(pattern, text)
+		if !ok {
+			return pattern, text, false
+		}
+		return rest, text[1:], true
+	default:
+		return literalMatch(pattern, text)
+	}
 }
 
 func starMatch(pattern, text string) bool {

@@ -147,11 +147,7 @@ func InlineCommandSubstitution(value string, sub Substitution) (string, error) {
 func (p *dotenvParser) substituteCommands(value string) (string, error) {
 	var out strings.Builder
 	for i := 0; i < len(value); {
-		escaped := value[i] == '\\' && strings.HasPrefix(value[i+1:], "$(")
-		dollar := i
-		if escaped {
-			dollar = i + 1
-		}
+		dollar, escaped := commandStart(value, i)
 		end := commandEnd(value, dollar)
 		if end < 0 {
 			out.WriteByte(value[i])
@@ -166,6 +162,15 @@ func (p *dotenvParser) substituteCommands(value string) (string, error) {
 		i = end
 	}
 	return out.String(), nil
+}
+
+// commandStart returns where a $( could start at value[i], after an escaping
+// backslash.
+func commandStart(value string, i int) (int, bool) {
+	if value[i] == '\\' && strings.HasPrefix(value[i+1:], "$(") {
+		return i + 1, true
+	}
+	return i, false
 }
 
 // commandEnd returns the end of a $(...) that starts at value[dollar], or -1.
@@ -286,7 +291,12 @@ func variableAt(value string, i int) (variableRef, bool) {
 	if value[i] != '$' || strings.HasPrefix(value[i+1:], "(") {
 		return variableRef{}, false
 	}
-	i++
+	name, end := scanVariableName(value, i+1)
+	return variableRef{text: value[start:end], escaped: escaped, name: name, end: end}, true
+}
+
+// scanVariableName reads an optional {, the name, and an optional } from value[i].
+func scanVariableName(value string, i int) (string, int) {
 	if i < len(value) && value[i] == '{' {
 		i++
 	}
@@ -298,7 +308,7 @@ func variableAt(value string, i int) (variableRef, bool) {
 	if i < len(value) && value[i] == '}' {
 		i++
 	}
-	return variableRef{text: value[start:i], escaped: escaped, name: name, end: i}, true
+	return name, i
 }
 
 func isVariableChar(c byte) bool {

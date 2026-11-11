@@ -3,7 +3,18 @@ package configuration
 // Ports lib/kamal/configuration/output.rb at Kamal 2.12.0. The loggers it builds
 // belong to the output stage of the port.
 
-import "github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/yamlord"
+import (
+	"errors"
+
+	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/yamlord"
+)
+
+// Kamal raises these as ArgumentError when it builds the loggers during
+// configuration, so the port checks the same settings at the same point.
+var (
+	ErrOtelEndpointRequired = errors.New("OTel endpoint is required")
+	ErrFilePathRequired     = errors.New("file path is required")
+)
 
 // Output holds the settings of the deploy log destinations, such as file and otel.
 type Output struct {
@@ -19,7 +30,22 @@ func newOutput(config *yamlord.Value) (*Output, error) {
 			return nil, err
 		}
 	}
-	return &Output{config: config.Map()}, nil
+	o := &Output{config: config.Map()}
+	return o, o.checkLoggerSettings()
+}
+
+func (o *Output) checkLoggerSettings() error {
+	required := map[string]struct {
+		key string
+		err error
+	}{"otel": {"endpoint", ErrOtelEndpointRequired}, "file": {"path", ErrFilePathRequired}}
+	for _, kind := range o.Kinds() {
+		settings, _ := o.Settings(kind)
+		if !settings.At(required[kind].key).Truthy() {
+			return required[kind].err
+		}
+	}
+	return nil
 }
 
 // Enabled reports whether any destination is set.
