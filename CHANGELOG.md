@@ -10,7 +10,9 @@ All notable changes to Helvilette Wunjo are listed here. The format follows
 
 - **The `wunjo` binary builds from `cmd/wunjo` and prints its version with
   `wunjo version`.** `make test` runs `go vet` and every Go test, and `make build`
-  writes `bin/wunjo`.
+  writes `bin/wunjo`. `make install` installs a static `wunjo` into
+  `~/.local/bin`, and `make release` writes static binaries for Linux and macOS
+  on amd64 and arm64 into `dist/`, with `SHA256SUMS`.
 - **The `NOTICE` file carries Kamal's MIT notice.** The port ships Kamal's 45 test
   fixtures and its configuration documents, which the validator reads.
 - **Wunjo renders the ERB subset of RFC 0001 in deploy files and accessory files.**
