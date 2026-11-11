@@ -1,0 +1,11 @@
+#!/bin/sh
+# Runs the wunjo binary that the Go test harness built. Kamal's test apps compute
+# the build arch and the commit in Ruby ERB, which Wunjo's ERB subset rejects, so
+# the ported apps read LOCAL_ARCH and COMMIT_SHA from the environment instead.
+case "$(uname -m)" in
+  aarch64 | arm64) LOCAL_ARCH=arm64 ;;
+  *) LOCAL_ARCH=amd64 ;;
+esac
+COMMIT_SHA="$(git rev-parse HEAD 2>/dev/null)"
+export LOCAL_ARCH COMMIT_SHA
+exec /wunjo/bin/wunjo-integration "$@"

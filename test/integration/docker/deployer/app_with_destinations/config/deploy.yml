@@ -1,0 +1,32 @@
+service: app_with_destinations
+image: app_with_destinations
+require_destination: true
+deploy_timeout: 2
+drain_timeout: 2
+readiness_delay: 0
+proxy:
+  host: localhost
+  ssl: false
+  healthcheck:
+    interval: 1
+    timeout: 1
+    path: "/up"
+  response_timeout: 2
+  forward_headers: true
+registry:
+  server: registry:4443
+  username: root
+  password: root
+# Kamal's file computes arch with Kamal::Utils.docker_arch and COMMIT_SHA with
+# `git rev-parse HEAD` in ERB. Wunjo's ERB subset reads ENV, which the deployer's
+# wunjo wrapper sets.
+builder:
+  driver: docker
+  arch: <%= ENV["LOCAL_ARCH"] %>
+  args:
+    COMMIT_SHA: <%= ENV["COMMIT_SHA"] %>
+aliases:
+  staging_deploy: deploy -d staging
+  production_deploy: deploy -d production
+  staging_config: config -d staging
+  production_config: config -d production

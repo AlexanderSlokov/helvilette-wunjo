@@ -81,6 +81,11 @@ The port differs from Kamal 2.12.0 in the following ways:
 - **Version.** `wunjo version` prints the Wunjo version, such as 0.1.0. The OTel
     logger sends it as `service.version` and as the scope version, and keeps
     `service.name` as `kamal`, so existing collector queries still match.
+- **Integration apps.** Kamal's sample apps in `test/integration/docker/deployer/`
+    set `builder/arch` with `Kamal::Utils.docker_arch` and `COMMIT_SHA` with
+    `` `git rev-parse HEAD` `` in ERB, which the subset rejects. The ported apps read
+    `ENV["LOCAL_ARCH"]` and `ENV["COMMIT_SHA"]`, and the deployer's `wunjo` wrapper
+    sets both. The deployer image starts from Debian, because Wunjo needs no Ruby.
 - **OTel numbers.** Ruby writes a runtime of 12 seconds as `12.0` in the OTLP JSON,
     and Go's encoder writes `12`. Both are the same JSON number.
 

@@ -1,0 +1,39 @@
+service: app_with_custom_certificate
+image: app_with_custom_certificate
+servers:
+  web:
+    hosts:
+      - vm1
+      - vm2
+  workers:
+    hosts:
+      - vm3
+    cmd: sleep infinity
+deploy_timeout: 2
+drain_timeout: 2
+readiness_delay: 0
+
+proxy:
+  host: localhost
+  ssl:
+    certificate_pem: CUSTOM_CERT
+    private_key_pem: CUSTOM_KEY
+  healthcheck:
+    interval: 1
+    timeout: 1
+    path: "/up"
+
+asset_path: /usr/share/nginx/html/versions
+
+registry:
+  server: registry:4443
+  username: root
+  password: root
+# Kamal's file computes arch with Kamal::Utils.docker_arch and COMMIT_SHA with
+# `git rev-parse HEAD` in ERB. Wunjo's ERB subset reads ENV, which the deployer's
+# wunjo wrapper sets.
+builder:
+  driver: docker
+  arch: <%= ENV["LOCAL_ARCH"] %>
+  args:
+    COMMIT_SHA: <%= ENV["COMMIT_SHA"] %>

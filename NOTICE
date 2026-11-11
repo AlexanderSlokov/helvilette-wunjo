@@ -5,7 +5,9 @@ This product is licensed under the Apache License, Version 2.0. See LICENSE.
 
 The code under internal/kamal/ is a port of Kamal 2.12.0 (commit e3ec7b6) from Ruby to
 Go. The files under internal/kamal/testdata/fixtures/ and
-internal/kamal/configuration/docs/ are copied from Kamal 2.12.0. Kamal carries the
+internal/kamal/configuration/docs/ are copied from Kamal 2.12.0, and so are
+test/integration/docker-compose.yml and the files under test/integration/docker/,
+with the changes that their comments name. Kamal carries the
 following notice:
 
   Copyright (c) 2023 David Heinemeier Hansson

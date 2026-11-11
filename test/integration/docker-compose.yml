@@ -1,0 +1,115 @@
+# Copied from test/integration/docker-compose.yml at Kamal 2.12.0. The deployer
+# mounts this repository at /wunjo and runs the wunjo binary that the Go test
+# harness builds into bin/, in place of installing the Kamal gem.
+name: "wunjo-test"
+
+volumes:
+  shared:
+  registry:
+  otel:
+  hub-cache:
+
+services:
+  shared:
+    build:
+      context: docker/shared
+    volumes:
+      - shared:/shared
+
+  deployer:
+    privileged: true
+    build:
+      context: docker/deployer
+    environment:
+      - TEST_ID=${TEST_ID:-}
+    volumes:
+      - ../..:/wunjo
+      - shared:/shared
+      - otel:/tmp/otel
+    depends_on:
+      shared:
+        condition: service_healthy
+
+  registry:
+    build:
+      context: docker/registry
+    environment:
+      - REGISTRY_HTTP_ADDR=0.0.0.0:4443
+      - REGISTRY_HTTP_TLS_CERTIFICATE=/certs/domain.crt
+      - REGISTRY_HTTP_TLS_KEY=/certs/domain.key
+    volumes:
+      - shared:/shared
+      - registry:/var/lib/registry/
+    depends_on:
+      shared:
+        condition: service_healthy
+
+  # Docker Hub pull-through cache. The deployer and vm inner daemons point their
+  # registry-mirrors here (see their boot.sh), so base images (registry:3, nginx,
+  # busybox, traefik, basecamp/kamal-proxy) are fetched from Docker Hub at most
+  # once per run instead of on every test, dodging Hub rate limits.
+  #
+  # The cache fetches from Docker Hub on its own (anonymous by default — separate
+  # from any `docker login` on the host, since Hub's anonymous limit is per-IP).
+  # Export DOCKERHUB_USERNAME and DOCKERHUB_TOKEN (a Hub access token) to have the
+  # cache authenticate its upstream pulls against your account's higher quota.
+  hub-cache:
+    image: registry:3
+    environment:
+      - REGISTRY_PROXY_REMOTEURL=https://registry-1.docker.io
+      - REGISTRY_PROXY_USERNAME=${DOCKERHUB_USERNAME:-}
+      - REGISTRY_PROXY_PASSWORD=${DOCKERHUB_TOKEN:-}
+    volumes:
+      - hub-cache:/var/lib/registry
+    healthcheck:
+      test: [ "CMD", "pgrep", "registry" ]
+      interval: 1s
+
+  vm1:
+    privileged: true
+    build:
+      context: docker/vm
+    volumes:
+      - shared:/shared
+    ports:
+      - "443"
+    depends_on:
+      shared:
+        condition: service_healthy
+
+  vm2:
+    privileged: true
+    build:
+      context: docker/vm
+    volumes:
+      - shared:/shared
+    depends_on:
+      shared:
+        condition: service_healthy
+
+  vm3:
+    privileged: true
+    build:
+      context: docker/vm
+    volumes:
+      - shared:/shared
+    depends_on:
+      shared:
+        condition: service_healthy
+
+  otel_collector:
+    build:
+      context: docker/otel_collector
+    volumes:
+      - otel:/tmp/otel
+
+  load_balancer:
+    build:
+      context: docker/load_balancer
+    ports:
+      - "80"
+      - "443"
+    depends_on:
+      - vm1
+      - vm2
+      - vm3

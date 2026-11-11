@@ -1,0 +1,40 @@
+service: app_with_traefik
+image: app_with_traefik
+servers:
+  - vm1
+  - vm2
+deploy_timeout: 2
+drain_timeout: 2
+readiness_delay: 0
+
+registry:
+  server: registry:4443
+  username: root
+  password: root
+# Kamal's file computes arch with Kamal::Utils.docker_arch and COMMIT_SHA with
+# `git rev-parse HEAD` in ERB. Wunjo's ERB subset reads ENV, which the deployer's
+# wunjo wrapper sets.
+builder:
+  driver: docker
+  arch: <%= ENV["LOCAL_ARCH"] %>
+  args:
+    COMMIT_SHA: <%= ENV["COMMIT_SHA"] %>
+proxy:
+  run:
+    publish: false
+    options:
+      label:
+        - traefik.http.services.kamal_proxy.loadbalancer.server.scheme=http
+        - traefik.http.routers.kamal_proxy.rule=PathPrefix(`/`)
+      sysctl: net.ipv4.ip_local_port_range=10000 60999
+accessories:
+  traefik:
+    service: traefik
+    image: traefik:v3.6
+    port: "0.0.0.0:80:80"
+    cmd: "--providers.docker"
+    options:
+      volume:
+        - "/var/run/docker.sock:/var/run/docker.sock"
+    roles:
+      - web

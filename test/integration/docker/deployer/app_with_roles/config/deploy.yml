@@ -1,0 +1,68 @@
+service: app_with_roles
+image: app_with_roles
+servers:
+  web:
+    hosts:
+      - vm1
+      - vm2
+  workers:
+    hosts:
+      - vm3
+    cmd: sleep infinity
+deploy_timeout: 2
+drain_timeout: 2
+readiness_delay: 0
+
+proxy:
+  run:
+    registry: registry:4443
+  host: localhost
+  ssl: false
+  healthcheck:
+    interval: 1
+    timeout: 1
+    path: "/up"
+  response_timeout: 2
+  buffering:
+    requests: false
+    responses: false
+    memory: 400_000
+    max_request_body: 40_000_000
+    max_response_body: 40_000_000
+  forward_headers: true
+  logging:
+    request_headers:
+      - Cache-Control
+      - X-Forwarded-Proto
+    response_headers:
+      - X-Request-ID
+      - X-Request-Start
+
+asset_path: /usr/share/nginx/html/versions
+error_pages_path: error_pages
+
+registry:
+  server: registry:4443
+  username: root
+  password: root
+# Kamal's file computes arch with Kamal::Utils.docker_arch and COMMIT_SHA with
+# `git rev-parse HEAD` in ERB. Wunjo's ERB subset reads ENV, which the deployer's
+# wunjo wrapper sets.
+builder:
+  driver: docker
+  arch: <%= ENV["LOCAL_ARCH"] %>
+  args:
+    COMMIT_SHA: <%= ENV["COMMIT_SHA"] %>
+accessories:
+  busybox:
+    service: custom-busybox
+    image: busybox:1.36.0
+    cmd: sh -c 'echo "Starting busybox..."; trap exit term; while true; do sleep 1; done'
+    roles:
+      - web
+aliases:
+  whome: version
+  worker_hostname: app exec -r workers --reuse hostname
+  worker_hostname_quiet: app exec -r workers -q --reuse hostname
+  uname: server exec -p uname
+  uname_quiet: server exec -q -p uname
