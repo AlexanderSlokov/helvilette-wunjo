@@ -64,7 +64,7 @@ func (c *CLI) execInteractiveReuse(opts Options, command string) error {
 func (c *CLI) execInteractiveNew(opts Options, command string) error {
 	return c.usingVersion(c.latestVersionAnnounced(opts), func(version string) error {
 		c.say("Launching interactive command with version "+version+" via SSH from new container on "+c.kamal.PrimaryHost()+"...", "magenta")
-		if err := c.registryLoginOn(opts, []string{c.kamal.PrimaryHost()}); err != nil {
+		if err := c.registryLoginOn(opts, c.primaryHosts()); err != nil {
 			return err
 		}
 		app := c.kamal.App(c.kamal.PrimaryRole(), c.kamal.PrimaryHost())

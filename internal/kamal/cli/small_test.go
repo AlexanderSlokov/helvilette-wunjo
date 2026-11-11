@@ -118,3 +118,18 @@ func TestBootstrapInstallAsSudoNonRootUser(t *testing.T) {
 	}
 	assertContains(t, output, "Session refreshed due to group change.")
 }
+
+// A deploy file with accessories and no servers has no primary host. Kamal locks on
+// Array(nil), which is no host, so the port runs the lock on no host. Found by the
+// proxied accessory test of the integration suite.
+func TestLockWithoutServersRunsOnNoHost(t *testing.T) {
+	w := newWorld(t)
+	w.files["/k/config/no_servers.yml"] = "service: app\nimage: dhh/app\nregistry:\n  username: user\n  password: pw\n" +
+		"builder:\n  arch: amd64\naccessories:\n  busybox:\n    image: busybox:1.36.0\n    host: 1.1.1.5\n"
+	w.run("lock", "acquire", "-m", "test", "-c", "config/no_servers.yml")
+	for _, command := range w.hosts.executed {
+		if strings.HasPrefix(command, ": ") {
+			t.Fatalf("ran a command on an empty host: %q", command)
+		}
+	}
+}

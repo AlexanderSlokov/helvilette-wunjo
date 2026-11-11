@@ -173,3 +173,19 @@ func sorted(items []string) []string {
 	sort.Strings(out)
 	return out
 }
+
+// Kamal 2.12.0 wraps deploy, redeploy, and rollback in an unlocked modify, so their
+// log starts before the build. The integration suite found the missing wrapper.
+func TestDeployLogStartsBeforeTheBuild(t *testing.T) {
+	for _, command := range []string{"deploy", "redeploy"} {
+		w := outputWorld(t, "  file:\n    path: log/kamal\n")
+		w.recordInvokes = true
+		w.run(command, "-c", outputConfig)
+		path, content := w.logFiles.only(t)
+		if !strings.HasSuffix(path, "_"+command+".log") {
+			t.Fatalf("log file = %s", path)
+		}
+		assertContains(t, content, "Build and push app image...\n")
+		assertContains(t, content, "Acquiring the deploy lock...\n")
+	}
+}

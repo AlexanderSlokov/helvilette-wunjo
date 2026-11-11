@@ -165,7 +165,16 @@ func (c *CLI) captureLockStatus(opts Options) (string, error) {
 }
 
 func (c *CLI) onPrimary(opts Options, fn func(*sshexec.Session) error) error {
-	return c.on(opts, []string{c.kamal.PrimaryHost()}, fn)
+	return c.on(opts, c.primaryHosts(), fn)
+}
+
+// primaryHosts is the primary host as a list, empty when the deploy file has no
+// servers, as SSHKit's on(KAMAL.primary_host) runs on Array(nil), which is no host.
+func (c *CLI) primaryHosts() []string {
+	if host := c.kamal.PrimaryHost(); host != "" {
+		return []string{host}
+	}
+	return nil
 }
 
 // lockStatus ports `kamal lock status`.

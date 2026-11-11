@@ -105,6 +105,20 @@ func TestThorStyleBooleanAndGreedyFlags(t *testing.T) {
 	}
 }
 
+// Thor 1.4.0 reads `--opts=a b c` as ["a", "b", "c"]. The integration suite's
+// `proxy boot_config set --docker-options=label=... label=...` found the difference.
+func TestGreedyFlagWithAnEqualsSignTakesTheFollowingWords(t *testing.T) {
+	rec := &recordingRun{}
+	set := &Command{Name: "set", MaxArgs: 1, Flags: []Flag{{Name: "docker-options", Kind: StringListFlag, Greedy: true}}, Run: rec.run}
+	var out bytes.Buffer
+	if err := Execute(&Command{Name: "wunjo", Children: []*Command{set}}, []string{"set", "--docker-options=a=1", "b=2", "c=3"}, &out, &out); err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Join(rec.got.Strings("docker-options"), ","); got != "a=1,b=2,c=3" {
+		t.Fatalf("options = %s", got)
+	}
+}
+
 func TestCommandWithoutArgsRejectsArgs(t *testing.T) {
 	_, err := execute(t, &recordingRun{}, "deploy", "extra")
 	if err == nil {

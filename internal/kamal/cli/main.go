@@ -61,7 +61,14 @@ func (c *CLI) setup(_ []string, opts Options) error {
 	return err
 }
 
+// deploy runs inside an unlocked modify, as Kamal 2.12.0 does, so the deploy log
+// holds the build and the post-deploy hook, and the lock covers only the steps on
+// the hosts.
 func (c *CLI) deploy(opts Options, bootAccessories bool) error {
+	return c.modify(false, func() error { return c.deployModified(opts, bootAccessories) })
+}
+
+func (c *CLI) deployModified(opts Options, bootAccessories bool) error {
 	runtime, err := c.printRuntime(func() error {
 		invokeOptions := c.deployOptions(opts)
 		if err := c.buildOrPull(opts, invokeOptions); err != nil {
@@ -117,6 +124,10 @@ func runtimeTag(runtime time.Duration) tags.Tag {
 }
 
 func (c *CLI) redeploy(_ []string, opts Options) error {
+	return c.modify(false, func() error { return c.redeployModified(opts) })
+}
+
+func (c *CLI) redeployModified(opts Options) error {
 	runtime, err := c.printRuntime(func() error {
 		invokeOptions := c.deployOptions(opts)
 		if err := c.buildOrPull(opts, invokeOptions); err != nil {
@@ -136,7 +147,11 @@ func (c *CLI) redeploy(_ []string, opts Options) error {
 }
 
 func (c *CLI) rollback(args []string, opts Options) error {
-	version, rolledBack := args[0], false
+	return c.modify(false, func() error { return c.rollbackModified(args[0], opts) })
+}
+
+func (c *CLI) rollbackModified(version string, opts Options) error {
+	rolledBack := false
 	runtime, err := c.printRuntime(func() error {
 		return c.modify(true, func() error {
 			invokeOptions := c.deployOptions(opts)

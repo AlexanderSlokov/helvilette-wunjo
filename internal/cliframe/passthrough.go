@@ -177,6 +177,8 @@ func takeFlag(f Flag, word string, words []string, i int, hasValue bool) ([]stri
 		return "", false
 	}
 	switch {
+	case hasValue && f.Greedy:
+		return greedyAfterValue(word, words, i)
 	case hasValue:
 		return []string{word}, i
 	case f.Kind == BoolFlag:
@@ -192,6 +194,17 @@ func takeFlag(f Flag, word string, words []string, i int, hasValue bool) ([]stri
 		}
 		return []string{word}, i
 	}
+}
+
+// greedyAfterValue keeps "--x=a" and takes the words after it, as Thor puts a back
+// on the arguments and reads the array from there: "--x=a b" is "--x=a --x b".
+func greedyAfterValue(word string, words []string, i int) ([]string, int) {
+	name, _, _ := strings.Cut(word, "=")
+	rest, last := greedyValues(name, words, i)
+	if last == i {
+		return []string{word}, i
+	}
+	return append([]string{word}, rest...), last
 }
 
 func greedyValues(word string, words []string, i int) ([]string, int) {

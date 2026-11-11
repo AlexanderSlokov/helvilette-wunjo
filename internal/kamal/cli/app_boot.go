@@ -345,7 +345,10 @@ func (c *CLI) uploadErrorPages(s *sshexec.Session) error {
 		return err
 	}
 	local := filepath.Join(os.TempDir(), "kamal-error-pages", c.config().Version())
-	return s.Upload(sshexec.Upload{LocalPath: local, Tree: tree, Mode: "0700"}, c.config().ProxyBoot().ErrorPagesDirectory())
+	// Kamal passes mode: "0700", but net-scp takes the mode of a local directory and
+	// its files from their stat, so the pages arrive as 0755 and 0644. kamal-proxy runs
+	// as a non-root user and needs that. The integration suite found the difference.
+	return s.Upload(sshexec.Upload{LocalPath: local, Tree: tree}, c.config().ProxyBoot().ErrorPagesDirectory())
 }
 
 // errorPageTree reads the pages into the <version> directory that Kamal uploads.
