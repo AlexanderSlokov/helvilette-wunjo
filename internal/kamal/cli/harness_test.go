@@ -161,10 +161,13 @@ type world struct {
 	holdingLock bool
 	// last is the CLI of the latest run.
 	last *CLI
+	// logFiles and otel record what the output loggers write and post.
+	logFiles *fakeLogFiles
+	otel     *fakeOTelPoster
 }
 
 func newWorld(t *testing.T) *world {
-	w := &world{t: t, files: testsupport.FakeFiles{"/k/Dockerfile": ""}, hosts: &fakeHosts{}, local: &fakeHosts{},
+	w := &world{t: t, files: testsupport.FakeFiles{"/k/Dockerfile": ""}, hosts: &fakeHosts{}, local: &fakeHosts{}, logFiles: &fakeLogFiles{}, otel: &fakeOTelPoster{},
 		env: testsupport.FakeEnv{"VERSION": "999", "RAILS_MASTER_KEY": "123", "MYSQL_ROOT_PASSWORD": "secret123",
 			testsupport.RemoteArchVariable: testsupport.RemoteArch},
 		shell: map[string]localshell.Result{
@@ -298,6 +301,7 @@ func (w *world) runtime() Runtime {
 		Adapters: func(name string) (SecretsAdapter, error) {
 			return adapters.Lookup(name, adapters.Deps{Shell: &localshell.Fake{}, Lookup: w.env.Lookup})
 		},
+		OutputFiles: w.logFiles, OTelPoster: w.otel,
 	}
 }
 

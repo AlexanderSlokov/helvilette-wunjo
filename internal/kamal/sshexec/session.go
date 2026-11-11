@@ -154,7 +154,7 @@ func (s *Session) run(cmd Command) (Result, error) {
 		return result, &FailedError{Name: cmd.name(), ExitStatus: result.ExitStatus, Stdout: result.Stdout, Stderr: result.Stderr}
 	}
 	if s.backend.LogsExit() {
-		s.out.commandExit(cmd, result.ExitStatus, result.Runtime, id)
+		s.out.commandExit(cmd, s.Host, result.ExitStatus, result.Runtime, id)
 	}
 	return result, nil
 }

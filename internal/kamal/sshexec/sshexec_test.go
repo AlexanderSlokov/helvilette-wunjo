@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -65,11 +66,31 @@ func TestFormatterPrettyLines(t *testing.T) {
 	var out bytes.Buffer
 	f := NewFormatter(&out, false)
 	f.commandStart(cmdOf("docker", "ps"), "1.1.1.1", "", "1a2b3c4d")
-	f.commandExit(cmdOf("docker", "ps"), 0, 1500*time.Millisecond, "1a2b3c4d")
+	f.commandExit(cmdOf("docker", "ps"), "1.1.1.1", 0, 1500*time.Millisecond, "1a2b3c4d")
 	f.Log(Debug, "hidden")
 	want := "  INFO [1a2b3c4d] Running docker ps on 1.1.1.1\n  INFO [1a2b3c4d] Finished in 1.500 seconds with exit status 0 (successful).\n"
 	if out.String() != want {
 		t.Fatalf("got\n%s", out.String())
+	}
+}
+
+// Kamal's output formatter sends every line to the loggers, below the verbosity too,
+// with the host and the stream of the command.
+func TestFormatterSinkReceivesEveryLineWithItsContext(t *testing.T) {
+	var lines []LogLine
+	f := NewFormatter(io.Discard, false)
+	f.Sink = func(line LogLine) { lines = append(lines, line) }
+	f.commandStart(cmdOf("docker", "ps"), "1.1.1.1", "", "1a2b3c4d")
+	f.commandData("1.1.1.1", "stdout", "abc\n", "1a2b3c4d")
+	f.Log(Warn, "careful")
+	want := []LogLine{
+		{Text: "  INFO [1a2b3c4d] Running docker ps on 1.1.1.1\n", Level: Info, Host: "1.1.1.1"},
+		{Text: " DEBUG [1a2b3c4d] Command: docker ps\n", Level: Debug, Host: "1.1.1.1"},
+		{Text: " DEBUG [1a2b3c4d] \tabc\n", Level: Debug, Host: "1.1.1.1", Stream: "stdout"},
+		{Text: "  WARN careful\n", Level: Warn},
+	}
+	if !reflect.DeepEqual(lines, want) {
+		t.Fatalf("lines = %+v", lines)
 	}
 }
 

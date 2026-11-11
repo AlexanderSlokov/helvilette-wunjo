@@ -68,7 +68,7 @@ func (o *OpenSSH) runOnce(host, command string, stdin io.Reader, id string, out 
 		return Result{}, err
 	}
 	release := o.limitStart(host)
-	result, err := runLogged(o.Processes, Process{Name: "ssh", Args: args, Stdin: stdin}, id, out)
+	result, err := runLogged(o.Processes, Process{Name: "ssh", Args: args, Stdin: stdin}, host, id, out)
 	release(err == nil && result.ExitStatus != 255)
 	if err != nil {
 		return result, err

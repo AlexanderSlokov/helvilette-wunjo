@@ -230,3 +230,16 @@ func TestWithSpecificHostsRestoresPrimaryHostEvenAfterAnError(t *testing.T) {
 		t.Fatalf("primary host = %s", c.PrimaryHost())
 	}
 }
+
+func TestOnLoadRunsOnceWhenTheConfigLoadsAndSurvivesReset(t *testing.T) {
+	c := configureWith(t, "deploy_simple")
+	loads := 0
+	c.OnLoad = func(*configuration.Configuration) { loads++ }
+	c.Configure(ConfigOptions{ConfigFile: "fixtures/deploy_simple.yml"})
+	c.MustConfig()
+	c.MustConfig()
+	c.Reset()
+	if loads != 1 || c.OnLoad == nil {
+		t.Fatalf("loads = %d, OnLoad kept = %v", loads, c.OnLoad != nil)
+	}
+}

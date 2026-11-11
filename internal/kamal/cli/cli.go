@@ -9,6 +9,7 @@ import (
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/cliframe"
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/commander"
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/configuration"
+	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/output"
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/sshexec"
 )
 
@@ -39,6 +40,9 @@ type Runtime struct {
 	Getenv func(name string) (string, bool)
 	// Adapters looks up the secrets adapters of `kamal secrets fetch`.
 	Adapters SecretsAdapters
+	// OutputFiles and OTelPoster are where the output loggers write.
+	OutputFiles output.Files
+	OTelPoster  output.Poster
 }
 
 // LocalFiles is the local file system that init, error pages, and clones use.
@@ -64,12 +68,23 @@ type CLI struct {
 	// invoke runs a command by its Thor name, such as "build:deliver". Tests replace
 	// it to record invocations, as Kamal's tests expect calls to invoke.
 	invoke func(name string, args []string, opts Options) error
+	// logs are the output loggers. logging turns on with the first modify, and
+	// modifyDepth counts the nested modify calls.
+	logs        *output.Broadcast
+	logging     bool
+	modifyDepth int
 }
 
 // New returns a CLI that runs commands with kamal and rt.
 func New(kamal *commander.Commander, rt Runtime) *CLI {
-	c := &CLI{rt: rt, kamal: kamal, out: sshexec.NewFormatter(rt.Stdout, rt.StdoutTTY), invoked: map[string]bool{}}
+	c := &CLI{rt: rt, kamal: kamal, out: sshexec.NewFormatter(rt.Stdout, rt.StdoutTTY), invoked: map[string]bool{},
+		logs: output.NewBroadcast(rt.Now)}
 	c.invoke = c.runInvocation
+	// An inline `kamal secrets` call builds a second CLI on the same commander, and
+	// the loggers belong to the first.
+	if kamal.OnLoad == nil {
+		kamal.OnLoad = c.configureOutput
+	}
 	return c
 }
 
@@ -89,6 +104,9 @@ func (c *CLI) RunInline(args []string) (string, error) {
 //
 //	status := cli.New(kamal, rt).Run(os.Args[1:])
 func (c *CLI) Run(args []string) (status int) {
+	// Kamal closes the loggers at exit, after the error report, so the OTel
+	// shipper posts what is left.
+	defer c.logs.Close()
 	defer func() {
 		if r := recover(); r != nil {
 			status = c.reportPanic(r)

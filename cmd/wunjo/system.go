@@ -17,6 +17,7 @@ import (
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/configuration"
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/git"
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/localshell"
+	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/output"
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/secrets"
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/secrets/adapters"
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/sshexec"
@@ -84,7 +85,9 @@ func (s *system) runtime() cli.Runtime {
 			}
 			return os.LookupEnv(name)
 		},
-		Adapters: s.secretsAdapter,
+		Adapters:    s.secretsAdapter,
+		OutputFiles: output.OSFiles{},
+		OTelPoster:  output.NewHTTPPoster(),
 	}
 }
 

@@ -59,6 +59,7 @@ func (OSProcesses) RunProcess(p Process) (int, error) {
 type streamLogger struct {
 	mu     sync.Mutex
 	buf    strings.Builder
+	host   string
 	stream string
 	id     string
 	out    *Formatter
@@ -68,7 +69,7 @@ func (s *streamLogger) Write(p []byte) (int, error) {
 	s.mu.Lock()
 	s.buf.Write(p)
 	s.mu.Unlock()
-	s.out.commandData(s.stream, string(p), s.id)
+	s.out.commandData(s.host, s.stream, string(p), s.id)
 	return len(p), nil
 }
 
@@ -79,9 +80,9 @@ func (s *streamLogger) String() string {
 }
 
 // runLogged starts a process with logged output and returns its result.
-func runLogged(runner ProcessRunner, p Process, id string, out *Formatter) (Result, error) {
-	stdout := &streamLogger{stream: "stdout", id: id, out: out}
-	stderr := &streamLogger{stream: "stderr", id: id, out: out}
+func runLogged(runner ProcessRunner, p Process, host, id string, out *Formatter) (Result, error) {
+	stdout := &streamLogger{host: host, stream: "stdout", id: id, out: out}
+	stderr := &streamLogger{host: host, stream: "stderr", id: id, out: out}
 	p.Stdout, p.Stderr = stdout, stderr
 	started := time.Now()
 	status, err := runner.RunProcess(p)
@@ -98,7 +99,7 @@ type Local struct {
 // Run logs and runs cmd through /bin/sh -c.
 func (l Local) Run(host string, cmd Command, id string, out *Formatter) (Result, error) {
 	out.commandStart(cmd, host, l.User, id)
-	return runLogged(l.Processes, Process{Name: "/bin/sh", Args: []string{"-c", cmd.ToCommand()}, Env: cmd.ProcessEnv, Dir: cmd.Dir}, id, out)
+	return runLogged(l.Processes, Process{Name: "/bin/sh", Args: []string{"-c", cmd.ToCommand()}, Env: cmd.ProcessEnv, Dir: cmd.Dir}, host, id, out)
 }
 
 // Upload writes the content to remote on this machine.

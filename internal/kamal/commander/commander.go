@@ -39,6 +39,10 @@ type Commander struct {
 	specificRoles []*configuration.Role
 	specificHosts []string
 	specifics     *Specifics
+
+	// OnLoad runs once each configuration loads, as configure_sshkit_with sets up
+	// the output loggers in Kamal.
+	OnLoad func(*configuration.Configuration)
 }
 
 // New returns a commander that reads files and runs local commands through env
@@ -72,6 +76,9 @@ func (c *Commander) Config() (*configuration.Configuration, error) {
 		return nil, err
 	}
 	c.cfg = cfg
+	if c.OnLoad != nil {
+		c.OnLoad(cfg)
+	}
 	return cfg, nil
 }
 
@@ -97,8 +104,13 @@ func (c *Commander) MustConfig() *configuration.Configuration {
 // Reset forgets the configuration and the selection, as KAMAL.reset does before an
 // alias runs its command.
 func (c *Commander) Reset() {
+	onLoad := c.OnLoad
 	*c = *New(c.env, c.runtime, c.envLock)
+	c.OnLoad = onLoad
 }
+
+// Performer names who runs the command, as the tags record it.
+func (c *Commander) Performer() string { return c.runtime.Performer }
 
 // SetSpecificRoles selects the roles that match the patterns, such as "web*".
 func (c *Commander) SetSpecificRoles(patterns []string) error {

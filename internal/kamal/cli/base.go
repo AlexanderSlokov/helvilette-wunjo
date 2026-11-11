@@ -27,6 +27,7 @@ func (c *CLI) say(message, color string) {
 	if !strings.HasSuffix(message, " ") && !strings.HasSuffix(message, "\t") {
 		c.sayPart("\n", "")
 	}
+	c.logSaid(message)
 }
 
 // sayPart prints message without ending the line, as Thor's say(message, color,
@@ -64,13 +65,6 @@ func (c *CLI) printRuntime(fn func() error) (time.Duration, error) {
 }
 
 // modify runs fn as a change to the hosts, holding the deploy lock when lock is set.
-func (c *CLI) modify(lock bool, fn func() error) error {
-	if lock {
-		return c.withLock(fn)
-	}
-	return fn()
-}
-
 // confirming runs fn when --confirmed is set or the user answers y.
 func (c *CLI) confirming(opts Options, question string, fn func() error) error {
 	if opts.Bool("confirmed") {
