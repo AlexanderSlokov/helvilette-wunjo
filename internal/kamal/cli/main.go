@@ -43,6 +43,7 @@ func (c *CLI) mainSpecs() []spec {
 		{name: "remove", desc: "Remove kamal-proxy, app, accessories, and registry session from servers", flags: []flag{confirmedFlag}, run: c.removeAll},
 		{name: "upgrade", desc: "Upgrade from Kamal 1.x to 2.0", flags: []flag{confirmedFlag, boolFlag("rolling", "", "Upgrade one host at a time")}, run: c.upgrade},
 		{name: "version", desc: "Show Kamal version", run: func([]string, Options) error { c.puts(Version); return nil }},
+		{name: "tree", desc: treeDescription, run: func([]string, Options) error { c.printCommandTree(); return nil }},
 	}
 }
 
@@ -320,14 +321,16 @@ func (c *CLI) bundleKamal() error {
 func (c *CLI) removeAll(_ []string, opts Options) error {
 	return c.confirming(opts, "This will remove all containers and images. Are you sure?", func() error {
 		return c.modify(true, func() error {
-			withoutConfirm := opts.Without("confirmed")
+			// Kamal calls options.without(:confirmed), which resolves to
+			// Enumerable#without and keeps the key, so each command runs
+			// confirmed. The Ruby oracle shows confirmed=true on all four.
 			steps := []struct {
 				name string
 				args []string
 				opts Options
 			}{
-				{"app:remove", nil, withoutConfirm}, {"proxy:remove", nil, withoutConfirm},
-				{"accessory:remove", []string{"all"}, opts}, {"registry:remove", nil, withoutConfirm.With("skip_local", "true")},
+				{"app:remove", nil, opts}, {"proxy:remove", nil, opts},
+				{"accessory:remove", []string{"all"}, opts}, {"registry:remove", nil, opts.With("skip_local", "true")},
 			}
 			for _, step := range steps {
 				if err := c.invoke(step.name, step.args, step.opts); err != nil {

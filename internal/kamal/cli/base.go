@@ -23,17 +23,22 @@ func (c *CLI) config() *configuration.Configuration { return c.kamal.MustConfig(
 // say prints a message, colored when stdout is a terminal, as Thor's say does: a
 // newline follows unless the message ends with a space or a tab.
 func (c *CLI) say(message, color string) {
+	c.sayPart(message, color)
+	if !strings.HasSuffix(message, " ") && !strings.HasSuffix(message, "\t") {
+		c.sayPart("\n", "")
+	}
+}
+
+// sayPart prints message without ending the line, as Thor's say(message, color,
+// false) does.
+func (c *CLI) sayPart(message, color string) {
 	if c.globals.Bool("raw") {
 		return
 	}
-	text := message
 	if color != "" && c.rt.StdoutTTY {
-		text = thorColor(color) + message + "\033[0m"
+		message = thorColor(color) + message + "\033[0m"
 	}
-	if !strings.HasSuffix(message, " ") && !strings.HasSuffix(message, "\t") {
-		text += "\n"
-	}
-	fmt.Fprint(c.rt.Stdout, text)
+	fmt.Fprint(c.rt.Stdout, message)
 }
 
 func thorColor(color string) string {

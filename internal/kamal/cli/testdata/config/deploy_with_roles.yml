@@ -1,0 +1,27 @@
+---
+:roles:
+- web
+- workers
+:hosts:
+- 1.1.1.1
+- 1.1.1.2
+- 1.1.1.3
+- 1.1.1.4
+:primary_host: 1.1.1.1
+:version: '999'
+:repository: registry.digitalocean.com/dhh/app
+:absolute_image: registry.digitalocean.com/dhh/app:999
+:service_with_version: app-999
+:volume_args: []
+:ssh_options:
+  :user: root
+  :port: 22
+  :keepalive: true
+  :keepalive_interval: 30
+  :log_level: :fatal
+:sshkit: {}
+:builder:
+  arch: amd64
+:logging:
+- "--log-opt"
+- max-size="10m"

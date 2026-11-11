@@ -29,7 +29,8 @@ type stub struct {
 	match  func(command string) bool
 	output string
 	fail   string
-	// only limits the stub to captures ("capture") or executes ("execute").
+	// only limits the stub to captures ("capture"), executes ("execute"),
+	// or captures that raise on a non-zero exit ("strict") or do not ("lenient").
 	only string
 	// outputs, when set, gives the output of each matching call in turn.
 	outputs func() string
@@ -41,6 +42,10 @@ func (s stub) applies(cmd sshexec.Command) bool {
 		return cmd.Captures
 	case "execute":
 		return !cmd.Captures
+	case "strict":
+		return cmd.Captures && cmd.RaiseOnNonZeroExit
+	case "lenient":
+		return cmd.Captures && !cmd.RaiseOnNonZeroExit
 	default:
 		return true
 	}
@@ -149,6 +154,12 @@ type world struct {
 	execs         []string
 	invokes       []string
 	recordInvokes bool
+	// failInvoke names an invoked command that fails, as a Mocha raises does.
+	failInvoke string
+	// holdingLock stands for KAMAL_LOCK=true.
+	holdingLock bool
+	// last is the CLI of the latest run.
+	last *CLI
 }
 
 func newWorld(t *testing.T) *world {
@@ -214,14 +225,43 @@ func (w *world) newCLI() *CLI {
 		RandomHex: func() string { return "0123456789abcdef" }}
 	runtime := commands.Runtime{Now: func() time.Time { return recordedAt }, Performer: "deployer@example.com", Git: git.Git{Shell: sh},
 		RandomHex: func(n int) string { return strings.Repeat("a1", n) }, StdinTTY: w.tty, Files: w.files, WorkDir: "/k"}
-	c := New(commander.New(env, runtime, false), w.runtime())
+	c := New(commander.New(env, runtime, w.holdingLock), w.runtime())
 	if w.recordInvokes {
-		c.invoke = func(name string, args []string, opts Options) error {
-			w.invokes = append(w.invokes, strings.TrimSpace(name+" "+strings.Join(args, " ")+" | "+opts.Describe()))
-			return nil
-		}
+		c.invoke = w.recordInvoke
 	}
+	w.last = c
 	return c
+}
+
+// recordInvoke stands for a Mocha expectation on invoke: it records the call and
+// runs nothing.
+func (w *world) recordInvoke(name string, args []string, opts Options) error {
+	w.invokes = append(w.invokes, invocation(name, args, opts))
+	if name == w.failInvoke {
+		return errors.New("RuntimeError")
+	}
+	return nil
+}
+
+// failTimes fails the first n matching commands and lets later ones through, as
+// Mocha's raises(...).then.returns(...) does.
+// invocation describes one invoke as "name args | options".
+func invocation(name string, args []string, opts Options) string {
+	return strings.TrimSpace(name+" "+strings.Join(args, " ")) + " | " + opts.Describe()
+}
+
+func failTimes(match func(string) bool, n int, message string) stub {
+	var mu sync.Mutex
+	failed := 0
+	return stub{match: func(text string) bool {
+		mu.Lock()
+		defer mu.Unlock()
+		if failed >= n || !match(text) {
+			return false
+		}
+		failed++
+		return true
+	}, fail: message}
 }
 
 // sleep records the pause and moves the test clock forward, as real time passes in
@@ -294,6 +334,12 @@ func (b *syncBuffer) WriteString(s string) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	b.buf.WriteString(s)
+}
+
+func (b *syncBuffer) reset() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.buf.Reset()
 }
 
 func (b *syncBuffer) String() string {

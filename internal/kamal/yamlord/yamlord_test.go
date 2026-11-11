@@ -135,3 +135,29 @@ func TestDumpWithSymbolKeysRoundTrips(t *testing.T) {
 		t.Fatalf("round trip lost data:\n%s\n%s", text, back.Inspect())
 	}
 }
+
+// The expected styles come from Psych 5 in the Ruby oracle image, where
+// {"k" => s}.to_yaml prints each string.
+func TestQuoteStringFollowsPsych(t *testing.T) {
+	cases := map[string]string{
+		"--log-opt": `"--log-opt"`, `max-size="10m"`: `max-size="10m"`, "999": "'999'", "dhh/app": "dhh/app",
+		"y": `"y"`, "<<": "!!str '<<'", "": "''", ":fatal": `":fatal"`, "09": "'09'", "a: b": "'a: b'", "true": "'true'",
+	}
+	for text, want := range cases {
+		if got := quoteString(text); got != want {
+			t.Errorf("quoteString(%q) = %s, want %s", text, got, want)
+		}
+	}
+}
+
+func TestDumpWritesSymbolKeyedMapsWithColons(t *testing.T) {
+	ssh := OrderedOf(Pair{"user", NewString("root")}).SymbolKeyed()
+	doc := NewMap(OrderedOf(Pair{"ssh_options", NewMap(ssh)}, Pair{"builder", NewMap(OrderedOf(Pair{"arch", NewString("amd64")}))}))
+	want := "---\n:ssh_options:\n  :user: root\n:builder:\n  arch: amd64\n"
+	if got := DumpWithSymbolKeys(doc); got != want {
+		t.Fatalf("dump = %q, want %q", got, want)
+	}
+	if !ssh.Clone().HasSymbolKeys() {
+		t.Fatal("Clone dropped the Symbol keys")
+	}
+}

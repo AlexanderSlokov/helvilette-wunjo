@@ -31,7 +31,17 @@ type Flag struct {
 	// Greedy makes a StringListFlag take every following word up to the next flag,
 	// as Thor's array options do: --docker-options a=1 b=2.
 	Greedy bool
+	// Pairs makes a StringListFlag a Thor hash option: it takes the following
+	// KEY:VALUE words, a repeated key is an error, and a repeated flag replaces
+	// the earlier pairs. For example, "-e A:1 B:2 ruby -v" sets A and B.
+	Pairs bool
 }
+
+// ParseError is an argument that Thor rejects before the command runs. Thor
+// prints its message without an error class.
+type ParseError struct{ Message string }
+
+func (e *ParseError) Error() string { return e.Message }
 
 // AnyArgs as Command.MaxArgs accepts any number of positional arguments.
 const AnyArgs = -1

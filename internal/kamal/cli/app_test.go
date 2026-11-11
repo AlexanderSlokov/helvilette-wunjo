@@ -350,3 +350,16 @@ func TestAppLiveAndMaintenance(t *testing.T) {
 	assertContains(t, appRun(appWorld(t, "with_accessories"), "with_accessories", "1.1.1.1", "maintenance"), `docker exec kamal-proxy kamal-proxy stop app-web --drain-timeout="30s" on 1.1.1.1`)
 	assertContains(t, appRun(appWorld(t, "with_accessories"), "with_accessories", "1.1.1.1", "maintenance", "--message", "Hello", "--drain_timeout", "10"), `docker exec kamal-proxy kamal-proxy stop app-web --drain-timeout="10s" --message="Hello" on 1.1.1.1`)
 }
+
+// Kamal has no test for -e. The expectations come from Thor 1.4.0 in the Ruby
+// oracle: -e takes the following KEY:VALUE words, and a repeated key fails before
+// the command runs.
+func TestAppExecWithEnvPairs(t *testing.T) {
+	output := newWorld(t).fixture("deploy_simple").run("app", "exec", "-e", "A:1", "B:2", "ruby -v", "-c", "test/fixtures/deploy_simple.yml")
+	assertMatches(t, output, `--env A="1" --env B="2" .*dhh/app:latest ruby -v on 1\.1\.1\.1`)
+	w := newWorld(t).fixture("deploy_simple")
+	w.runFailing("app", "exec", "-e", "A:1", "A:2", "ls", "-c", "test/fixtures/deploy_simple.yml")
+	if got := w.errOut.String(); got != "You can't specify 'A' more than once in option '--env'; got A:1 and A:2\n" {
+		t.Fatalf("stderr = %q", got)
+	}
+}

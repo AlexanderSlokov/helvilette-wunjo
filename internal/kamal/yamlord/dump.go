@@ -1,6 +1,7 @@
 package yamlord
 
 import (
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -33,7 +34,7 @@ func writeValue(out *strings.Builder, v *Value, indent int, symbolKeys bool) {
 func writeMap(out *strings.Builder, m *Ordered, indent int, symbolKeys bool) {
 	for _, key := range m.Keys() {
 		out.WriteString("\n" + strings.Repeat("  ", indent))
-		if symbolKeys {
+		if symbolKeys || m.HasSymbolKeys() {
 			out.WriteString(":")
 		}
 		out.WriteString(quoteKey(key) + ":")
@@ -75,17 +76,30 @@ func scalar(v *Value) string {
 
 func quoteKey(key string) string { return quoteString(key) }
 
-// quoteString leaves a string plain when YAML reads it back as the same string,
-// and quotes it otherwise: double quotes for control characters, single quotes
-// for the rest.
+var (
+	// nonWordStart is Psych's /^[^[:word:]][^"]*$/, where a word character is a
+	// letter, a mark, a decimal digit, or a connector such as "_".
+	nonWordStart = regexp.MustCompile(`^[^\p{L}\p{M}\p{Nd}\p{Pc}][^"]*$`)
+	octalLike    = regexp.MustCompile(`^0[0-7]*[89]`)
+)
+
+// quoteString picks the style of a string scalar by the rules of Psych's
+// YAMLTree#visit_String, in its order: "--log-opt" is double quoted, "999" is
+// single quoted, and "dhh/app" stays plain.
 func quoteString(text string) string {
-	if needsDoubleQuotes(text) {
+	switch {
+	case text == "<<":
+		// Psych tags it, so YAML does not read it back as a merge key.
+		return "!!str '<<'"
+	case text == "y" || text == "Y" || text == "n" || text == "N":
+		return `"` + text + `"`
+	case needsDoubleQuotes(text) || nonWordStart.MatchString(text):
 		return strconv.Quote(text)
-	}
-	if plainSafe(text) {
+	case text == "" || tokenize(text).Kind() != String || octalLike.MatchString(text) || !plainAllowed(text):
+		return "'" + strings.ReplaceAll(text, "'", "''") + "'"
+	default:
 		return text
 	}
-	return "'" + strings.ReplaceAll(text, "'", "''") + "'"
 }
 
 func needsDoubleQuotes(text string) bool {
@@ -97,14 +111,13 @@ func needsDoubleQuotes(text string) bool {
 	return false
 }
 
-func plainSafe(text string) bool {
-	if text == "" || strings.TrimSpace(text) != text || strings.ContainsAny(text[:1], "-?:,[]{}#&*!|>'\"%@`") {
+// plainAllowed reports whether libyaml can emit text as a plain scalar. When it
+// cannot, libyaml falls back to single quotes.
+func plainAllowed(text string) bool {
+	if strings.TrimSpace(text) != text || strings.ContainsAny(text[:1], "-?:,[]{}#&*!|>'\"%@`") {
 		return false
 	}
-	if strings.Contains(text, ": ") || strings.Contains(text, " #") || strings.HasSuffix(text, ":") {
-		return false
-	}
-	return tokenize(text).Kind() == String
+	return !strings.Contains(text, ": ") && !strings.Contains(text, " #") && !strings.HasSuffix(text, ":")
 }
 
 // SortedKeys returns the keys of m in sorted order.

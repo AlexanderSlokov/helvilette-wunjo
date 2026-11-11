@@ -35,3 +35,9 @@ All notable changes to Helvilette Wunjo are listed here. The format follows
   per host open, starts at most `sshkit/max_concurrent_starts` connections at once,
   retries DNS failures, and logs each command in SSHKit's format. `make
   test-integration` runs a command on sshd in Docker through an SSH agent.
+- **Wunjo runs Kamal's commands.** `setup`, `deploy`, `redeploy`, `rollback`, `remove`,
+  `upgrade`, `config`, `init`, `docs`, `tree`, aliases, hooks, the deploy lock, and the
+  `app`, `accessory`, `proxy`, `build`, `registry`, `server`, `prune`, and `secrets`
+  groups follow Kamal 2.12.0, flags included. The ported tests of `test/cli/` pass,
+  and `wunjo config` and `wunjo tree` print the same text as Kamal. The `secrets fetch`
+  and output tests wait for the adapters and the output port.

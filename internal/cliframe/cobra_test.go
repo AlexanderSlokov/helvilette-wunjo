@@ -121,3 +121,35 @@ func TestHelpListsChildren(t *testing.T) {
 		t.Fatalf("help output lacks the deploy command:\n%s", out)
 	}
 }
+
+// The expectations come from Thor 1.4.0: P.start(%w[x -e A:1 B:2 ruby -v]) gives
+// {"A" => "1", "B" => "2"} and ["ruby", "-v"], and a second -e replaces the first.
+func TestThorStylePairsFlags(t *testing.T) {
+	cases := map[string]struct{ env, args string }{
+		"-e A:1 B:2 ruby -v":    {"A:1,B:2", "ruby -v"},
+		"-e A:1 -e B:2 ruby":    {"B:2", "ruby"},
+		"--env=A:1 B:x:y ls":    {"A:1,B:x:y", "ls"},
+		"ruby -e URL:https://x": {"URL:https://x", "ruby"},
+	}
+	for line, want := range cases {
+		rec := &recordingRun{}
+		run := &Command{Name: "exec", MaxArgs: AnyArgs, PassUnknownFlags: true, Flags: []Flag{{Name: "env", Short: "e", Kind: StringListFlag, Pairs: true}}, Run: rec.run}
+		var out bytes.Buffer
+		if err := Execute(&Command{Name: "wunjo", Children: []*Command{run}}, append([]string{"exec"}, strings.Fields(line)...), &out, &out); err != nil {
+			t.Fatalf("%s: %v", line, err)
+		}
+		if got := strings.Join(rec.got.Strings("env"), ","); got != want.env || strings.Join(rec.got.Args, " ") != want.args {
+			t.Errorf("%s: env %q args %q, want %q and %q", line, got, rec.got.Args, want.env, want.args)
+		}
+	}
+}
+
+func TestPairsFlagRejectsARepeatedKey(t *testing.T) {
+	run := &Command{Name: "exec", MaxArgs: AnyArgs, PassUnknownFlags: true, Flags: []Flag{{Name: "env", Short: "e", Kind: StringListFlag, Pairs: true}}, Run: (&recordingRun{}).run}
+	var out bytes.Buffer
+	err := Execute(&Command{Name: "wunjo", Children: []*Command{run}}, []string{"exec", "-e", "A:1", "A:2", "ls"}, &out, &out)
+	want := "You can't specify 'A' more than once in option '--env'; got A:1 and A:2"
+	if parse, ok := err.(*ParseError); !ok || parse.Message != want {
+		t.Fatalf("err = %v, want ParseError %q", err, want)
+	}
+}

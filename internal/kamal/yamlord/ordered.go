@@ -8,6 +8,8 @@ package yamlord
 type Ordered struct {
 	keys   []string
 	values map[string]*Value
+	// symbolKeys marks a Ruby Hash with Symbol keys, which YAML dumps as ":user:".
+	symbolKeys bool
 }
 
 // NewOrdered returns an empty Hash.
@@ -30,6 +32,16 @@ func OrderedOf(pairs ...Pair) *Ordered {
 	}
 	return m
 }
+
+// SymbolKeyed marks the keys of m as Ruby Symbols and returns m, for example for
+// the SSH options of Configuration#to_h.
+func (m *Ordered) SymbolKeyed() *Ordered {
+	m.symbolKeys = true
+	return m
+}
+
+// HasSymbolKeys reports whether the keys of m are Ruby Symbols.
+func (m *Ordered) HasSymbolKeys() bool { return m != nil && m.symbolKeys }
 
 // Len returns the number of keys. A nil Hash has none.
 func (m *Ordered) Len() int {
@@ -96,6 +108,7 @@ func (m *Ordered) Clone() *Ordered {
 	for _, key := range m.Keys() {
 		out.Set(key, m.values[key])
 	}
+	out.symbolKeys = m.HasSymbolKeys()
 	return out
 }
 

@@ -70,6 +70,15 @@ The port differs from Kamal 2.12.0 in the following ways:
 - **Control path length.** OpenSSH keeps each connection in a Unix socket, whose path
     must stay under 108 bytes, so the control directory lives directly under the
     system temporary directory.
+- **Directory uploads.** SSHKit uploads a directory, such as the error pages, file by
+    file. The port sends it as one `tar` stream.
+- **ERB statements.** The ERB subset has no statement tags, so `<% if true -%>` fails
+    with an error that names the tag. Kamal's blank-line trimming tests trim comment
+    tags instead.
+- **Init template.** The `RUBY_VERSION` comment in the `config/deploy.yml` that
+    `wunjo init` writes reads `ENV["RUBY_VERSION"]`. Kamal's template uses Ruby
+    expressions outside the ERB subset.
+- **Version.** `wunjo version` prints the Wunjo version, such as 0.1.0.
 
 ## Stages
 

@@ -19,6 +19,7 @@ type flag struct {
 	hasDefault         bool
 	repeatable         bool
 	greedy             bool
+	pairs              bool
 }
 
 func boolFlag(name, short, usage string) flag {
@@ -54,6 +55,13 @@ func array(f flag) flag {
 	return f
 }
 
+// hash makes a Thor hash option, which takes the following KEY:VALUE words.
+func hash(f flag) flag {
+	f = repeatable(f)
+	f.pairs = true
+	return f
+}
+
 // classOptions are Kamal::Cli::Base's class options, which every command accepts.
 var classOptions = []flag{
 	optionalBool("verbose", "v", "Detailed logging"),
@@ -84,7 +92,7 @@ type spec struct {
 func toFrameFlags(flags []flag) []cliframe.Flag {
 	out := make([]cliframe.Flag, len(flags))
 	for i, f := range flags {
-		out[i] = cliframe.Flag{Name: dashed(f.name), Short: f.short, Usage: f.usage, Kind: f.kind, Default: frameDefault(f), Greedy: f.greedy}
+		out[i] = cliframe.Flag{Name: dashed(f.name), Short: f.short, Usage: f.usage, Kind: f.kind, Default: frameDefault(f), Greedy: f.greedy, Pairs: f.pairs}
 	}
 	return out
 }

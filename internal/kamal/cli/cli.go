@@ -6,6 +6,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/AlexanderSlokov/helvilette-wunjo/internal/cliframe"
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/commander"
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/configuration"
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/sshexec"
@@ -117,6 +118,11 @@ func (c *CLI) reportPanic(r any) int {
 }
 
 func (c *CLI) reportError(err error) {
+	var parse *cliframe.ParseError
+	if errors.As(err, &parse) {
+		fmt.Fprintln(c.rt.Stderr, parse.Message)
+		return
+	}
 	var exec *sshexec.ExecuteError
 	class := errorClass(err)
 	if errors.As(err, &exec) {

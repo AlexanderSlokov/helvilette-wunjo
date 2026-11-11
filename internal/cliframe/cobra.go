@@ -14,8 +14,12 @@ import (
 //
 //	err := cliframe.Execute(root, os.Args[1:], os.Stdout, os.Stderr)
 func Execute(root *Command, args []string, stdout, stderr io.Writer) error {
+	normalized, err := normalizeArgs(root, args)
+	if err != nil {
+		return err
+	}
 	cmd := toCobra(root, stdout, stderr)
-	cmd.SetArgs(normalizeArgs(root, args))
+	cmd.SetArgs(normalized)
 	cmd.SetOut(stdout)
 	cmd.SetErr(stderr)
 	cmd.SilenceUsage = true

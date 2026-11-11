@@ -106,17 +106,30 @@ func (c *CLI) absolute(path string) string {
 }
 
 // runInvocation runs a command by its Thor name once per run, as Thor's invoke
-// does: a second invoke of the same command does nothing.
+// does: a second invoke of the same command does nothing. Thor builds the
+// options of the invoked command from its own defaults with opts on top, so
+// `build deliver` pushes with `--output` set to registry.
 func (c *CLI) runInvocation(name string, args []string, opts Options) error {
 	if c.invoked[name] {
 		return nil
 	}
 	c.invoked[name] = true
-	run := c.handler(name)
-	if run == nil {
-		return fmt.Errorf("cli: no command %q", name)
+	target := c.specNamed(name)
+	if target == nil || target.run == nil {
+		return fmt.Errorf("cli: no command %q, want a Thor name such as \"build:push\"", name)
 	}
-	return run(args, opts)
+	return target.run(args, flagDefaults(target.flags).Merge(opts))
+}
+
+// flagDefaults returns the default value of each flag that has one.
+func flagDefaults(flags []flag) Options {
+	defaults := Options{}
+	for _, f := range flags {
+		if f.hasDefault {
+			defaults[f.name] = f.defaultValue
+		}
+	}
+	return defaults
 }
 
 // resetInvocation lets invoke run the commands of group again, as
@@ -129,22 +142,22 @@ func (c *CLI) resetInvocation(group string) {
 	}
 }
 
-func (c *CLI) handler(name string) func([]string, Options) error {
+func (c *CLI) specNamed(name string) *spec {
 	for _, s := range c.specs() {
-		if found := findHandler(s, "", name); found != nil {
+		if found := findSpec(s, "", name); found != nil {
 			return found
 		}
 	}
 	return nil
 }
 
-func findHandler(s spec, prefix, name string) func([]string, Options) error {
+func findSpec(s spec, prefix, name string) *spec {
 	full := strings.TrimPrefix(prefix+":"+s.name, ":")
 	if full == name {
-		return s.run
+		return &s
 	}
 	for _, child := range s.children {
-		if found := findHandler(child, full, name); found != nil {
+		if found := findSpec(child, full, name); found != nil {
 			return found
 		}
 	}

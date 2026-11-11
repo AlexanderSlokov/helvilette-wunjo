@@ -1,0 +1,24 @@
+---
+:roles:
+- web
+:hosts:
+- 1.1.1.1
+- 1.1.1.2
+:primary_host: 1.1.1.1
+:version: '999'
+:repository: dhh/app
+:absolute_image: dhh/app:999
+:service_with_version: app-999
+:volume_args: []
+:ssh_options:
+  :user: root
+  :port: 22
+  :keepalive: true
+  :keepalive_interval: 30
+  :log_level: :fatal
+:sshkit: {}
+:builder:
+  arch: amd64
+:logging:
+- "--log-opt"
+- max-size="10m"

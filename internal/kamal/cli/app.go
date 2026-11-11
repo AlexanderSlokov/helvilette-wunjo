@@ -53,7 +53,7 @@ const anyArgs = -1
 var appExecFlags = []flag{
 	boolFlag("interactive", "i", "Execute command over ssh for an interactive shell (use for console/bash)"),
 	boolFlag("reuse", "", "Reuse currently running container instead of starting a new one"),
-	repeatable(stringFlag("env", "e", "Set environment variables for the command")),
+	hash(stringFlag("env", "e", "Set environment variables for the command")),
 	boolFlag("detach", "", "Execute command in a detached container"),
 	boolFlag("raw", "", "Output raw, unmodified stdout"),
 }
@@ -450,7 +450,8 @@ func (c *CLI) currentRunningVersion(opts Options, host string) (string, error) {
 
 var errNoCommand = argumentError("No command provided. You must specify a command to execute.")
 
-// execEnv parses -e KEY:VALUE pairs, as Thor's hash option does.
+// execEnv reads the -e KEY:VALUE pairs, which cliframe has checked as Thor's
+// hash option does.
 func execEnv(opts Options) *yamlord.Ordered {
 	env := yamlord.NewOrdered()
 	for _, pair := range opts.List("env") {

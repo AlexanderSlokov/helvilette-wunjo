@@ -20,7 +20,8 @@ func (c *Configuration) ToH() (*yamlord.Ordered, error) {
 	}
 	c.setImageFields(out)
 	out.Set("volume_args", yamlord.Strings(c.VolumeArgs()...))
-	out.Set("ssh_options", yamlord.NewMap(ssh))
+	// SSH#to_h returns the Net::SSH options, which have Symbol keys.
+	out.Set("ssh_options", yamlord.NewMap(ssh.SymbolKeyed()))
 	out.Set("sshkit", yamlord.NewMap(c.sshkit.ToH()))
 	out.Set("builder", yamlord.NewMap(c.builder.ToH()))
 	setIfPresent(out, "accessories", c.raw.At("accessories"))
