@@ -18,6 +18,7 @@ type flag struct {
 	defaultValue       string
 	hasDefault         bool
 	repeatable         bool
+	greedy             bool
 }
 
 func boolFlag(name, short, usage string) flag {
@@ -43,6 +44,13 @@ func withDefault(f flag, value string) flag {
 
 func repeatable(f flag) flag {
 	f.repeatable, f.kind = true, cliframe.StringListFlag
+	return f
+}
+
+// array makes a Thor array option, which takes every following word.
+func array(f flag) flag {
+	f = repeatable(f)
+	f.greedy = true
 	return f
 }
 
@@ -76,7 +84,7 @@ type spec struct {
 func toFrameFlags(flags []flag) []cliframe.Flag {
 	out := make([]cliframe.Flag, len(flags))
 	for i, f := range flags {
-		out[i] = cliframe.Flag{Name: dashed(f.name), Short: f.short, Usage: f.usage, Kind: f.kind, Default: frameDefault(f)}
+		out[i] = cliframe.Flag{Name: dashed(f.name), Short: f.short, Usage: f.usage, Kind: f.kind, Default: frameDefault(f), Greedy: f.greedy}
 	}
 	return out
 }

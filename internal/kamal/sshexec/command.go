@@ -45,6 +45,8 @@ type Command struct {
 	// ProcessEnv adds variables to the environment of a local command, as Kamal's
 	// with_env does for hooks and build secrets. Remote commands ignore it.
 	ProcessEnv []EnvVar
+	// Captures marks a command whose output the caller reads, as SSHKit's capture.
+	Captures bool
 	// Dir runs a local command in this directory, as Kamal's Dir.chdir does around
 	// the build. Remote commands ignore it.
 	Dir string

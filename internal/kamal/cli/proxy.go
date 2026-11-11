@@ -49,7 +49,7 @@ var bootConfigFlags = []flag{
 	stringFlag("image_version", "", "Version of the proxy to run"),
 	numberFlag("metrics_port", "", "Port to report prometheus metrics on"),
 	boolFlag("debug", "", "Whether to run the proxy in debug mode"),
-	repeatable(stringFlag("docker_options", "", "Docker options to pass to the proxy container")),
+	array(stringFlag("docker_options", "", "Docker options to pass to the proxy container")),
 }
 
 func (c *CLI) proxyBoot(opts Options) error {

@@ -75,6 +75,7 @@ func (s *Session) ExecuteOK(cmd Command) (bool, error) {
 
 // Capture runs cmd at Debug and returns its stripped output, as capture does.
 func (s *Session) Capture(cmd Command) (string, error) {
+	cmd.Captures = true
 	cmd.Verbosity = Debug
 	result, err := s.run(cmd)
 	return strings.TrimSpace(result.Stdout), err
@@ -82,6 +83,7 @@ func (s *Session) Capture(cmd Command) (string, error) {
 
 // CaptureWithInfo runs cmd at Info and returns its stripped output.
 func (s *Session) CaptureWithInfo(cmd Command) (string, error) {
+	cmd.Captures = true
 	cmd.Verbosity = Info
 	result, err := s.run(cmd)
 	return strings.TrimSpace(result.Stdout), err
@@ -89,6 +91,7 @@ func (s *Session) CaptureWithInfo(cmd Command) (string, error) {
 
 // CaptureWithInfoRaw runs cmd at Info and returns its output, stripped unless raw.
 func (s *Session) CaptureWithInfoRaw(cmd Command, raw bool) (string, error) {
+	cmd.Captures = true
 	cmd.Verbosity = Info
 	result, err := s.run(cmd)
 	if raw {

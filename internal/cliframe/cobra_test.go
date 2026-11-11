@@ -92,6 +92,19 @@ func TestPassUnknownFlagsKeepsThemAsArgs(t *testing.T) {
 	}
 }
 
+func TestThorStyleBooleanAndGreedyFlags(t *testing.T) {
+	rec := &recordingRun{}
+	set := &Command{Name: "set", MaxArgs: 1, Flags: []Flag{{Name: "publish", Kind: BoolFlag, Default: "true"},
+		{Name: "docker-options", Kind: StringListFlag, Greedy: true}}, Run: rec.run}
+	var out bytes.Buffer
+	if err := Execute(&Command{Name: "wunjo", Children: []*Command{set}}, []string{"set", "x", "--publish", "false", "--docker_options", "a=1", "b=2"}, &out, &out); err != nil {
+		t.Fatal(err)
+	}
+	if rec.got.Bool("publish") || strings.Join(rec.got.Strings("docker-options"), ",") != "a=1,b=2" || strings.Join(rec.got.Args, " ") != "x" {
+		t.Fatalf("publish %v options %v args %v", rec.got.Bool("publish"), rec.got.Strings("docker-options"), rec.got.Args)
+	}
+}
+
 func TestCommandWithoutArgsRejectsArgs(t *testing.T) {
 	_, err := execute(t, &recordingRun{}, "deploy", "extra")
 	if err == nil {

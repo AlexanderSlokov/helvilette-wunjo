@@ -28,6 +28,9 @@ type Flag struct {
 	Usage   string
 	Kind    FlagKind
 	Default string
+	// Greedy makes a StringListFlag take every following word up to the next flag,
+	// as Thor's array options do: --docker-options a=1 b=2.
+	Greedy bool
 }
 
 // AnyArgs as Command.MaxArgs accepts any number of positional arguments.

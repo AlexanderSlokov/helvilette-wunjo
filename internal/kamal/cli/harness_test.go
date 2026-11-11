@@ -29,6 +29,19 @@ type stub struct {
 	match  func(command string) bool
 	output string
 	fail   string
+	// only limits the stub to captures ("capture") or executes ("execute").
+	only string
+}
+
+func (s stub) applies(cmd sshexec.Command) bool {
+	switch s.only {
+	case "capture":
+		return cmd.Captures
+	case "execute":
+		return !cmd.Captures
+	default:
+		return true
+	}
 }
 
 // fakeHosts prints each unstubbed command as SSHKit's printer does and records every
@@ -47,7 +60,7 @@ func (f *fakeHosts) Run(host string, cmd sshexec.Command, id string, out *sshexe
 	stubs := append([]stub(nil), f.stubs...)
 	f.mu.Unlock()
 	for _, s := range stubs {
-		if s.match(text) {
+		if s.applies(cmd) && s.match(text) {
 			return stubResult(cmd, s)
 		}
 	}
@@ -118,6 +131,12 @@ func (w *world) hooksExist() *world {
 
 func (w *world) stubRemote(match func(string) bool, output, fail string) *world {
 	w.hosts.stubs = append(w.hosts.stubs, stub{match: match, output: output, fail: fail})
+	return w
+}
+
+// stubCapture stubs only captures, as stubbing capture_with_info does.
+func (w *world) stubCapture(match func(string) bool, output string) *world {
+	w.hosts.stubs = append(w.hosts.stubs, stub{match: match, output: output, only: "capture"})
 	return w
 }
 
