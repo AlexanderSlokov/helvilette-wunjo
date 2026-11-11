@@ -65,6 +65,13 @@ Version 0.1.0, the first planned release, matches Kamal 2.12.0 command for comma
 - The same Docker commands on the servers, matched to the character by Kamal's ported
   tests.
 
+Version 0.1.0 fetches secrets with three of Kamal's nine vault adapters: AWS Secrets
+Manager (`aws_secrets_manager`), GCP Secret Manager (`gcp`), and Doppler (`doppler`).
+The other six, 1Password, Bitwarden, Bitwarden Secrets Manager, LastPass, Enpass, and
+Passbolt, stop with `Unknown secrets adapter`. To ask for one of them, open an issue
+that names the adapter in the
+[issue tracker](https://github.com/AlexanderSlokov/helvilette-wunjo/issues).
+
 The extensions that lift Kamal's rules come after the port. The [roadmap](ROADMAP.md)
 lists them with their target versions.
 
@@ -74,7 +81,8 @@ Wunjo runs on your laptop and has no component of its own on the servers. For ea
 deploy, Wunjo does the following, as Kamal does:
 
 1. Reads the deploy file, and the secrets from `.kamal/secrets`.
-1. Opens SSH connections to each host, with your `~/.ssh/config` and SSH agent.
+1. Opens SSH connections to each host with your OpenSSH client, which reads
+    `~/.ssh/config` and uses your SSH agent.
 1. Runs Docker commands on each host: pull the image, start the new container, wait
     for its health check, and switch `kamal-proxy` to it.
 1. Stops the old container and keeps it for rollback.
@@ -95,8 +103,9 @@ where `docker ps` shows it.
 
 ## Before you begin
 
-To run the example, you need Docker with the Compose plugin. To work on the port, you
-also need Go 1.27.3 or later and a checkout of Kamal at commit `e3ec7b6`, as
+To run the example, you need Docker with the Compose plugin. To deploy, you need the
+OpenSSH client, `ssh`, which most Linux and macOS machines have. To work on the port,
+you also need Go 1.27.3 or later and a checkout of Kamal at commit `e3ec7b6`, as
 [Port Kamal 2.12.0 to Go](docs/plans/port-kamal-to-go.md#before-you-begin) describes.
 
 ## Example
@@ -182,7 +191,7 @@ limits by design:
   that.
 - Wunjo does not replace Kubernetes for workloads that need Kubernetes.
 - Wunjo installs no agent and no web dashboard on the servers.
-- Wunjo needs no runtime besides its own binary.
+- Wunjo needs no runtime besides its own binary and the OpenSSH client.
 
 ## Project documents
 
@@ -201,5 +210,5 @@ To comment on the design, open an issue or a pull request against RFC 0001.
 ## License
 
 Wunjo is licensed under the [Apache License 2.0](LICENSE). Kamal is licensed under the
-MIT license, copyright 2023 David Heinemeier Hansson. Backlog task WJ-002 adds a
-`NOTICE` file that keeps Kamal's notice for the ported code.
+MIT license, copyright 2023 David Heinemeier Hansson. The [`NOTICE`](NOTICE) file keeps
+Kamal's notice for the ported code.

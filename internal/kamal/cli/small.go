@@ -4,6 +4,7 @@ package cli
 // Kamal 2.12.0.
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/secrets/adapters"
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/shell"
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/sshexec"
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/utils"
@@ -237,10 +239,11 @@ func (c *CLI) pruneContainers(opts Options) error {
 	})
 }
 
-// SecretsAdapter fetches secrets from a vault with the vendor's command-line tool.
+// SecretsAdapter fetches secrets from a vault with the vendor's command-line tool,
+// in the order of the vendor's output.
 type SecretsAdapter interface {
 	RequiresAccount() bool
-	Fetch(secrets []string, account, from string) (map[string]string, error)
+	Fetch(secrets []string, account, from string) ([]adapters.Secret, error)
 }
 
 // SecretsAdapters looks up an adapter by name, such as "1password".
@@ -274,27 +277,29 @@ func (c *CLI) secretsFetch(args []string, opts Options) error {
 	if err != nil {
 		return err
 	}
-	encoded := sortedJSON(results)
+	encoded := secretsJSON(results)
 	if opts.Bool("inline") {
 		encoded = shell.Escape(encoded)
 	}
 	return c.returnOrPuts(encoded, opts.Bool("inline"))
 }
 
-// sortedJSON encodes results in key order, so the output is repeatable.
-func sortedJSON(results map[string]string) string {
-	keys := make([]string, 0, len(results))
-	for key := range results {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-	var parts []string
-	for _, key := range keys {
-		k, _ := json.Marshal(key)
-		v, _ := json.Marshal(results[key])
-		parts = append(parts, string(k)+":"+string(v))
+// secretsJSON encodes results in their order, as Ruby's JSON.dump writes a Hash:
+// without HTML escapes, so "<" and "&" stay as they are.
+func secretsJSON(results []adapters.Secret) string {
+	parts := make([]string, len(results))
+	for i, secret := range results {
+		parts[i] = rubyJSONString(secret.Name) + ":" + rubyJSONString(secret.Value)
 	}
 	return "{" + strings.Join(parts, ",") + "}"
+}
+
+func rubyJSONString(text string) string {
+	var out bytes.Buffer
+	encoder := json.NewEncoder(&out)
+	encoder.SetEscapeHTML(false)
+	_ = encoder.Encode(text)
+	return strings.TrimSuffix(out.String(), "\n")
 }
 
 func (c *CLI) secretsExtract(args []string, opts Options) error {

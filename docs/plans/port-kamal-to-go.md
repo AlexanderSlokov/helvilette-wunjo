@@ -157,15 +157,25 @@ aliases, hooks, and the health-check poller.
 
 ### Stage 6: Secret adapters
 
-Port the ten adapters in `lib/kamal/secrets/adapters/`: AWS Secrets Manager, Bitwarden,
-Bitwarden Secrets Manager, Doppler, Enpass, GCP Secret Manager, LastPass, 1Password,
-Passbolt, and the test adapter. Each adapter calls the vendor's command-line tool.
+Port three of the nine vendor adapters in `lib/kamal/secrets/adapters/`, AWS Secrets
+Manager, GCP Secret Manager, and Doppler, with their base class and the test adapter.
+Each adapter calls the vendor's command-line tool through `localshell.Shell`.
 
-- Files: `internal/kamal/secrets/adapters/`.
-- Tests ported: `test/secrets/` (about 2,200 lines), with a named fake for the vendor
-    tools.
+The author chose the three on 2026-11-11. The other six adapters (1Password,
+Bitwarden, Bitwarden Secrets Manager, LastPass, Enpass, and Passbolt) move to the
+[roadmap](../../ROADMAP.md#secret-backends) and wait for a user who asks for one.
+Their names fail with Kamal's message, such as `Unknown secrets adapter: one_password`
+for `--adapter 1password`.
+
+- Files: `internal/kamal/secrets/adapters/`, `internal/kamal/cli/`, `cmd/wunjo/`.
+- Tests ported: `test/secrets/aws_secrets_manager_adapter_test.rb`,
+    `test/secrets/gcp_secret_manager_adapter_test.rb`,
+    `test/secrets/doppler_adapter_test.rb`, and the two `fetch` tests of
+    `test/cli/secrets_test.rb`. A `localshell.Fake` answers each vendor command, as
+    `stub_ticks` does.
 - Depends on: stage 5.
-- Done when: every ported adapter test passes.
+- Done when: the ported tests pass, and `wunjo secrets fetch` prints the secrets in
+    the order of the vendor's output, as Kamal does.
 
 ### Stage 7: Output and OpenTelemetry
 

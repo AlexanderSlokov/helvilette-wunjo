@@ -39,5 +39,9 @@ All notable changes to Helvilette Wunjo are listed here. The format follows
   `upgrade`, `config`, `init`, `docs`, `tree`, aliases, hooks, the deploy lock, and the
   `app`, `accessory`, `proxy`, `build`, `registry`, `server`, `prune`, and `secrets`
   groups follow Kamal 2.12.0, flags included. The ported tests of `test/cli/` pass,
-  and `wunjo config` and `wunjo tree` print the same text as Kamal. The `secrets fetch`
-  and output tests wait for the adapters and the output port.
+  and `wunjo config` and `wunjo tree` print the same text as Kamal. The output tests
+  wait for the output port.
+- **`wunjo secrets fetch` reads AWS Secrets Manager, GCP Secret Manager, and
+  Doppler.** The adapters call `aws`, `gcloud`, and `doppler` as Kamal 2.12.0 does
+  and print the secrets in the vendor's order. The other six Kamal adapters stop
+  with `Unknown secrets adapter` until a user asks for one.

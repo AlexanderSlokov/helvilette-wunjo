@@ -1,8 +1,6 @@
 package cli
 
-// Ports test/cli/registry_test.rb and the extract and print tests of
-// test/cli/secrets_test.rb at Kamal 2.12.0. The fetch tests need the secrets
-// adapters and come with them.
+// Ports test/cli/registry_test.rb and test/cli/secrets_test.rb at Kamal 2.12.0.
 
 import (
 	"strings"
@@ -100,5 +98,28 @@ func TestSecretsPrint(t *testing.T) {
 	w.files[".kamal/secrets"] = "SECRET1=ABC\nSECRET2=${SECRET1}DEF\n"
 	if got := w.run("secrets", "print", "-c", accessoriesConfig); got != "SECRET1=ABC\nSECRET2=ABCDEF" {
 		t.Fatalf("print = %q", got)
+	}
+}
+
+func TestSecretsFetch(t *testing.T) {
+	got := lockWorld(t).run("secrets", "fetch", "foo", "bar", "baz", "--account", "myaccount", "--adapter", "test", "-c", accessoriesConfig)
+	if got != `{"foo":"oof","bar":"rab","baz":"zab"}` {
+		t.Fatalf("fetch = %q", got)
+	}
+}
+
+func TestSecretsFetchMissingAccount(t *testing.T) {
+	got := lockWorld(t).run("secrets", "fetch", "foo", "bar", "baz", "--adapter", "test", "-c", accessoriesConfig)
+	if got != "No value provided for required options '--account'" {
+		t.Fatalf("fetch = %q", got)
+	}
+}
+
+// Kamal's JSON.dump leaves "<", ">", and "&" unescaped. The expected output comes
+// from Ruby Kamal 2.12.0.
+func TestSecretsFetchWritesJSONAsRuby(t *testing.T) {
+	got := lockWorld(t).run("secrets", "fetch", "a<b&c", "--account", "myaccount", "--adapter", "test", "-c", accessoriesConfig)
+	if got != `{"a<b&c":"c&b<a"}` {
+		t.Fatalf("fetch = %q", got)
 	}
 }

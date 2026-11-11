@@ -23,6 +23,8 @@ Wunjo will behave like Kamal 2.12.0, command for command, as a single Go binary.
 - Port Kamal's tests first, and match every Docker command string.
 - Render the ERB subset that the RFC defines, and reject other ERB with a clear error.
 - Keep Kamal's MIT notice in `NOTICE`.
+- Port three of Kamal's nine secret adapters: AWS Secrets Manager, GCP Secret Manager,
+  and Doppler.
 - Finish when the author deploys a real service from an unchanged `config/deploy.yml`.
 
 ## Phase 2: Wunjo extensions (target 0.2.0)
@@ -56,8 +58,10 @@ does for a Kubernetes cluster. See
 
 ### Secret backends
 
-Wunjo will read secrets from a backend such as Vault, after the first version reads
-them from `.env` files. See
+Wunjo will read secrets from more vaults with `wunjo secrets fetch`. See
 [RFC 0001: Why Helvilette Wunjo exists](docs/explanation/rfc-0001-why-helvilette-wunjo.md#one-file).
 
-- Pick the first backend from the RFC's open questions.
+- Add adapters that Kamal lacks: HashiCorp Vault and Infisical.
+- Port Kamal's other six adapters (1Password, Bitwarden, Bitwarden Secrets Manager,
+  LastPass, Enpass, and Passbolt) one at a time, when a user asks for one in an issue
+  or in Kamal's GitHub Discussions.

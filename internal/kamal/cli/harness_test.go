@@ -19,6 +19,7 @@ import (
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/git"
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/localshell"
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/secrets"
+	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/secrets/adapters"
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/sshexec"
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/testsupport"
 )
@@ -294,7 +295,9 @@ func (w *world) runtime() Runtime {
 			}
 			return w.env.Lookup(name)
 		},
-		Adapters: func(name string) (SecretsAdapter, error) { return nil, errors.New("no adapters in tests") },
+		Adapters: func(name string) (SecretsAdapter, error) {
+			return adapters.Lookup(name, adapters.Deps{Shell: &localshell.Fake{}, Lookup: w.env.Lookup})
+		},
 	}
 }
 

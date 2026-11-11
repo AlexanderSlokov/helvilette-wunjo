@@ -18,6 +18,7 @@ import (
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/git"
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/localshell"
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/secrets"
+	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/secrets/adapters"
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/sshexec"
 	"github.com/AlexanderSlokov/helvilette-wunjo/internal/kamal/tags"
 )
@@ -83,7 +84,7 @@ func (s *system) runtime() cli.Runtime {
 			}
 			return os.LookupEnv(name)
 		},
-		Adapters: unknownAdapter,
+		Adapters: s.secretsAdapter,
 	}
 }
 
@@ -154,8 +155,13 @@ func isTerminal(f *os.File) bool {
 	return err == nil && info.Mode()&os.ModeCharDevice != 0
 }
 
-func unknownAdapter(name string) (cli.SecretsAdapter, error) {
-	return nil, &cli.Error{Class: "RuntimeError", Message: "Unknown secrets adapter: " + name}
+// secretsAdapter looks up a vault adapter that calls the vendor tools on this machine.
+func (s *system) secretsAdapter(name string) (cli.SecretsAdapter, error) {
+	adapter, err := adapters.Lookup(name, adapters.Deps{Shell: s.shell, Lookup: os.LookupEnv})
+	if err != nil {
+		return nil, err
+	}
+	return adapter, nil
 }
 
 // osFiles is the local file system of init, error pages, and clones.

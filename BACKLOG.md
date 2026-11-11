@@ -7,14 +7,6 @@ task: port the Ruby tests first, match each Docker command string to the charact
 and name the Ruby source file at the top of each Go file. No GitHub issues exist for
 these tasks yet.
 
-## Secret adapters
-
-The following task ports the vendor adapters:
-
-| ID | Task | Files | Depends on | Done when |
-|---|---|---|---|---|
-| WJ-060 | Port the ten adapters in `secrets/adapters/`. | `internal/kamal/secrets/adapters/`, `internal/kamal/cli/` | None | The ported `test/secrets/` adapter tests and the two `fetch` tests of `test/cli/secrets_test.rb` pass with a named fake for each vendor tool. |
-
 ## Output
 
 The following task ports logging and OpenTelemetry (OTel) shipping:
