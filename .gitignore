@@ -27,3 +27,4 @@ go.work.sum
 # Custom
 /temp
 /bin
+__pycache__/
