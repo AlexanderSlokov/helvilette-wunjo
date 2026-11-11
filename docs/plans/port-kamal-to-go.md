@@ -219,7 +219,7 @@ The author settled the following choices on 2026-11-11:
 | Command-line library | `spf13/cobra`, the standard in the Go ecosystem, behind an interface owned by this project. |
 | Go version | Go 1.27, the latest stable release. `go.mod` sets `go 1.27`, and the toolchain is 1.27.3 or later. |
 | Release | The finished port ships as version 0.1.0. |
-| SSH client | The port runs the operator's OpenSSH `ssh` binary, with one ControlMaster connection per host, in place of net-ssh. OpenSSH reads `~/.ssh/config`, ProxyJump, and the agent as every other `ssh` command does. Chosen during stage 4 on 2026-11-11; the author can revisit it. |
+| SSH client | The port runs the operator's OpenSSH `ssh` binary, with one ControlMaster connection per host, in place of net-ssh. OpenSSH reads `~/.ssh/config`, ProxyJump, and the agent as every other `ssh` command does. Chosen during stage 4 and confirmed by the author on 2026-11-11, because every operator machine has OpenSSH. |
 
 ## Before you begin
 
