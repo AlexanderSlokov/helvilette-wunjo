@@ -57,3 +57,20 @@ All notable changes to Helvilette Wunjo are listed here. The format follows
   [the session record](docs/references/sessions/2026-11-11-integration-suite.md)
   shows. The suite found four differences from Kamal, now fixed, among them error
   pages that kamal-proxy could not read.
+- **A tutorial deploys a Kamal app with Wunjo, redeploys a change, and rolls it
+  back.** [Deploy a sample app with Wunjo](docs/tutorials/deploy-a-sample-app.md)
+  runs [tmeire/minimal-kamal](https://github.com/tmeire/minimal-kamal) unchanged on
+  the test stack, with one destination file. In
+  [the session record](docs/references/sessions/2026-11-12-tutorial-run.md), the
+  741 requests during the redeploy all returned HTTP status 200, and the rollback
+  took 1.4 seconds.
+- **[Install Wunjo](docs/how-to/install-wunjo.md) installs `wunjo` from a release
+  binary or with `make install`.** It checks the binary against `SHA256SUMS` and
+  names the OpenSSH client and Docker Buildx as requirements.
+
+### Changed
+
+- **The README describes version 0.1.0.** Its example checks a deploy file with
+  `wunjo config` on any machine, it lists the known differences from Kamal, and it
+  links to the tutorial and the install guide. The Compose example with `x-wunjo`
+  blocks leaves the README, because RFC 0001 proposes that format for a later version.
