@@ -15,7 +15,7 @@ The project will settle why Wunjo exists and what it proposes before writing cod
 - Resolve the open questions on routing without a hostname, the scope of
   `wunjo import`, drift, and secret backends.
 
-## Phase 1: Port Kamal 2.12.0 to Go (target 0.1.0)
+## Phase 1: Port Kamal 2.12.0 to Go (released as 0.1.0 on 2026-11-12)
 
 Wunjo will behave like Kamal 2.12.0, command for command, as a single Go binary. See
 [Port Kamal 2.12.0 to Go](docs/plans/port-kamal-to-go.md).

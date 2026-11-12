@@ -9,11 +9,5 @@ these tasks yet.
 
 ## Release
 
-The author accepted the port on 2026-11-12 after a demo deploy of
-[tmeire/minimal-kamal](https://github.com/tmeire/minimal-kamal), which replaces task
-WJ-081. Tasks WJ-091, WJ-092, and WJ-093 wrote the tutorial, the install guide, and
-the README for version 0.1.0. The following task releases it:
-
-| ID | Task | Files | Depends on | Done when |
-|---|---|---|---|---|
-| WJ-090 | Release version 0.1.0: merge `mvp` into `main`, move `[Unreleased]` to `[0.1.0]` in the changelog, tag `v0.1.0`, run `make release` at the tag, and publish the binaries with `SHA256SUMS`. | `CHANGELOG.md` | None | Tag `v0.1.0` exists, the GitHub release holds the four binaries and `SHA256SUMS`, the checksums match, and the `curl` and `git clone --branch v0.1.0` commands of `docs/how-to/install-wunjo.md` and `docs/tutorials/deploy-a-sample-app.md` run against the published release. |
+Version 0.1.0 shipped on 2026-11-12, and Phase 1 has no open tasks. The tasks of
+Phase 2 appear here when its roadmap items break down into tasks.

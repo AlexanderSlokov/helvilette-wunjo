@@ -6,6 +6,8 @@ All notable changes to Helvilette Wunjo are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-12
+
 ### Added
 
 - **The `wunjo` binary builds from `cmd/wunjo` and prints its version with
@@ -74,3 +76,6 @@ All notable changes to Helvilette Wunjo are listed here. The format follows
   `wunjo config` on any machine, it lists the known differences from Kamal, and it
   links to the tutorial and the install guide. The Compose example with `x-wunjo`
   blocks leaves the README, because RFC 0001 proposes that format for a later version.
+
+[Unreleased]: https://github.com/AlexanderSlokov/helvilette-wunjo/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/AlexanderSlokov/helvilette-wunjo/releases/tag/v0.1.0
